@@ -1,9 +1,9 @@
 # Syarat & Ketentuan Layanan (Terms of Service)
 
-**Terakhir diperbarui: [ISI TANGGAL]**
+**Terakhir diperbarui: 10/8/2026**
 
-Dokumen ini mengatur penggunaan bot Discord **[ISI NAMA BOT — misal: "Garuda RedM Bot"]**
-("Bot", "kami") yang digunakan di server Discord komunitas roleplay
+Dokumen ini mengatur penggunaan bot Discord **"Garuda RedM Bot"**
+yang digunakan di server Discord komunitas roleplay
 **Garuda RedM** dan/atau server Discord lain yang mengundang Bot ini
 ("Layanan"). Dengan menggunakan Bot ini, kamu ("Pengguna") dianggap
 telah membaca, memahami, dan menyetujui seluruh isi dokumen ini.
@@ -24,11 +24,6 @@ roleplay RedM:
 - **AI FAQ**: menjawab pertanyaan seputar server (cara bermain, aturan,
   job, dll) menggunakan model AI pihak ketiga, terbatas pada channel
   tertentu yang sudah ditentukan.
-- [ISI] **Welcome & Role Sync**: memberikan role otomatis dan pesan
-  selamat datang untuk member baru, serta menyinkronkan role Discord
-  dengan status keanggotaan di server RedM.
-- [ISI] **Status Kehadiran**: menampilkan status online admin/staff untuk
-  memudahkan pemain menghubungi pihak yang tepat.
 
 Kami berhak menambah, mengubah, atau menghentikan fitur apa pun dari Bot
 ini kapan saja tanpa pemberitahuan sebelumnya.
@@ -64,14 +59,14 @@ ini kapan saja tanpa pemberitahuan sebelumnya.
 - Pertanyaan yang tidak bisa dijawab oleh AI dari basis pengetahuan kami
   akan dicatat secara lokal untuk keperluan internal (mengembangkan basis
   pengetahuan Bot), sebagaimana dijelaskan lebih lanjut di
-  [Kebijakan Privasi kami](#-ISI-LINK-PRIVACY-POLICY-).
+  [Kebijakan Privasi kami](https://raw.githubusercontent.com/wyanns-404/garuda-redm-bot/refs/heads/main/privacy-policy.md).
 
 ---
 
 ## 4. Data & Privasi
 
 Penggunaan data yang dikumpulkan Bot (jika ada) diatur secara terpisah di
-**Kebijakan Privasi** kami: [ISI LINK PRIVACY POLICY].
+**Kebijakan Privasi** kami: [PRIVACY POLICY](https://raw.githubusercontent.com/wyanns-404/garuda-redm-bot/refs/heads/main/privacy-policy.md).
 Dengan menggunakan Bot ini, kamu juga menyetujui ketentuan dalam Kebijakan
 Privasi tersebut.
 
@@ -109,7 +104,7 @@ Privasi tersebut.
 ## 7. Kontak
 
 Pertanyaan, laporan masalah, atau permintaan terkait Bot ini dapat
-disampaikan melalui: **[ISI — email/channel Discord/username admin]**
+disampaikan melalui: **#support-ticket**
 
 ---
 
@@ -119,9 +114,3 @@ Dokumen ini diatur dan ditafsirkan berdasarkan hukum yang berlaku di
 Republik Indonesia, tanpa mengesampingkan hak Discord Inc. untuk
 menerapkan Syarat Layanan mereka sendiri terhadap penggunaan platform Discord.
 
----
-
-### Catatan sebelum publish (hapus bagian ini setelah selesai diisi):
-- Ganti semua `[ISI ...]` dengan info sebenarnya
-- Pastikan link Kebijakan Privasi di bagian 4 sudah aktif — Terms of Service dan Privacy Policy idealnya dipublikasikan bersamaan di halaman yang sama/terhubung
-- Hosting gratis: GitHub Pages, Notion (publish page), atau halaman statis di domain kamu
