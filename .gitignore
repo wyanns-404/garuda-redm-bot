@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+/node_modules
+
+/data/knowledge/*.md
+!/data/knowledge/example.md
+
+/data/*.log
+.DS_Store
+.vscode/
+.idea/
