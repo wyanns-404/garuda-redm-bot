@@ -1,3 +1,4 @@
+const path = require('path');
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -8,13 +9,10 @@ const {
   TextInputBuilder,
   TextInputStyle,
 } = require('discord.js');
-const logger = require('../../../../core/logger');
-const { baseEmbed, errorEmbed } = require('../../../../utils/embeds');
-const drafts = require('../../drafts');
-const { findCharacter } = require('../../playerRepository');
-const { sendDonationLog } = require('../../donationLog');
-const catalog = require('./catalog');
-const { insertDonationHorse } = require('./horseRepository');
+const logger = require('../../lib/logger');
+const db = require('../../lib/db');
+const { baseEmbed, errorEmbed } = require('../../lib/embeds');
+const { drafts, findCharacter, sendDonationLog } = require('./shared');
 
 /**
  * JENIS DONASI: Kuda -> insert ke tabel `player_horses`.
@@ -48,6 +46,148 @@ const HEIGHT_MAX = 1.17;
 
 const customId = (action, draftId) => ['donation', KEY, action, draftId].filter(Boolean).join(':');
 
+// ============================================================
+// Daftar kuda (data/donation/horses.json)
+// Edit file JSON-nya untuk nambah/hapus kuda, lalu restart bot.
+// ============================================================
+
+const { groups } = require(path.join(__dirname, '..', '..', '..', 'data', 'donation', 'horses.json'));
+
+// Batas dari Discord (opsi per dropdown) & dari kolom `horse` VARCHAR(50)
+const MAX_OPTIONS = 25;
+const MAX_MODEL_LENGTH = 50;
+
+function validate() {
+  if (groups.length > MAX_OPTIONS) {
+    throw new Error(`horses.json: jumlah grup ${groups.length}, maksimal ${MAX_OPTIONS}`);
+  }
+
+  const seenModels = new Set();
+  for (const group of groups) {
+    if (group.horses.length > MAX_OPTIONS) {
+      throw new Error(`horses.json: grup "${group.id}" punya ${group.horses.length} kuda, maksimal ${MAX_OPTIONS}`);
+    }
+    for (const horse of group.horses) {
+      if (horse.model.length > MAX_MODEL_LENGTH) {
+        throw new Error(`horses.json: model "${horse.model}" lebih dari ${MAX_MODEL_LENGTH} karakter`);
+      }
+      if (seenModels.has(horse.model)) {
+        throw new Error(`horses.json: model "${horse.model}" duplikat`);
+      }
+      seenModels.add(horse.model);
+    }
+  }
+}
+
+function findGroup(groupId) {
+  return groups.find((g) => g.id === groupId) || null;
+}
+
+function findHorse(model) {
+  for (const group of groups) {
+    const horse = group.horses.find((h) => h.model === model);
+    if (horse) return { ...horse, groupId: group.id };
+  }
+  return null;
+}
+
+// ============================================================
+// Database: insert ke `player_horses`
+// ============================================================
+
+const HORSE_ID_PREFIX = 'EXC';
+const LOCK_NAME = 'garuda_bot_donation_horseid';
+const LOCK_TIMEOUT_SECONDS = 10;
+
+/**
+ * Nilai kolom yang SELALU sama untuk setiap kuda donasi
+ * (diambil dari template query manual sebelumnya).
+ * Kalau ada nilai default yang mau diubah, cukup ubah di sini.
+ */
+const HORSE_DEFAULTS = {
+  horsexp: 5100,
+  credit: 100.0,
+  components_after: null,
+  components_before: null,
+  textures: null,
+  custom_textures: null,
+  coreHP: 100,
+  coreST: 100,
+  health: 120,
+  stamina: 120.0,
+  active: 0,
+  distance: 0,
+  status: 0,
+  notified: 0,
+  tamed: 0,
+  custprice: 0.0,
+  custenabled: 1,
+  job: 'blahorsetrainer',
+  flame: 0,
+  rgb: 0,
+};
+
+/**
+ * Insert kuda donasi dengan horseid berurutan (EXC + angka terakhir + 1).
+ *
+ * Kolom horseid TIDAK unique di database, jadi pengambilan nomor terakhir + INSERT
+ * dikunci pakai GET_LOCK di koneksi yang sama. Hasilnya: kalau 2 staff menekan
+ * Simpan bersamaan, yang kedua menunggu sampai yang pertama selesai -> nomor tidak bentrok.
+ *
+ * Kalau koneksi putus SEBELUM INSERT dikirim (misal koneksi idle sudah diputus server),
+ * dicoba ulang 1x dengan koneksi baru. Kalau putusnya saat/sesudah INSERT dikirim,
+ * TIDAK di-retry karena tidak bisa dipastikan datanya sudah masuk atau belum (bisa dobel).
+ *
+ * @returns {Promise<{ id: number, horseid: string }>}
+ */
+async function insertDonationHorse(data) {
+  const state = { insertSent: false };
+  try {
+    return await attemptInsert(data, state);
+  } catch (err) {
+    if (!err.fatal || state.insertSent) throw err;
+    logger.warn(`Koneksi DB putus sebelum insert (${err.code}), mencoba ulang dengan koneksi baru...`);
+    return attemptInsert(data, state);
+  }
+}
+
+async function attemptInsert(data, state) {
+  return db.withConnection(async (conn) => {
+    const [[{ locked }]] = await conn.query('SELECT GET_LOCK(?, ?) AS locked', [LOCK_NAME, LOCK_TIMEOUT_SECONDS]);
+    if (locked !== 1) {
+      throw new Error('Gagal mendapatkan lock horseid (ada proses simpan lain yang belum selesai).');
+    }
+
+    try {
+      // LIKE dulu supaya index `horseid` kepakai, REGEXP untuk buang horseid EXC yang bukan angka
+      const [[{ lastNumber }]] = await conn.query(
+        `SELECT MAX(CAST(SUBSTRING(horseid, ?) AS UNSIGNED)) AS lastNumber
+         FROM player_horses
+         WHERE horseid LIKE ? AND horseid REGEXP ?`,
+        [HORSE_ID_PREFIX.length + 1, `${HORSE_ID_PREFIX}%`, `^${HORSE_ID_PREFIX}[0-9]+$`]
+      );
+      const horseid = `${HORSE_ID_PREFIX}${Number(lastNumber || 0) + 1}`;
+
+      const row = { ...HORSE_DEFAULTS, ...data, horseid };
+      const columns = Object.keys(row);
+      state.insertSent = true;
+      const [result] = await conn.execute(
+        `INSERT INTO player_horses (${columns.map((c) => `\`${c}\``).join(', ')})
+         VALUES (${columns.map(() => '?').join(', ')})`,
+        columns.map((c) => row[c])
+      );
+
+      return { id: result.insertId, horseid };
+    } finally {
+      await conn.query('SELECT RELEASE_LOCK(?)', [LOCK_NAME]).catch(() => {});
+    }
+  });
+}
+
+// ============================================================
+// Tampilan Discord: modal, embed konfirmasi, tombol
+// ============================================================
+
 /**
  * Height: kosong / 0 -> '0' (default), selain itu angka 0.7 - 1.17 (maks 2 desimal).
  * Disimpan sebagai string karena kolom `height` bertipe VARCHAR(8).
@@ -73,8 +213,8 @@ function isComplete(draft) {
 }
 
 function buildConfirmation(draft, notice) {
-  const group = catalog.findGroup(draft.groupId);
-  const horse = draft.model ? catalog.findHorse(draft.model) : null;
+  const group = findGroup(draft.groupId);
+  const horse = draft.model ? findHorse(draft.model) : null;
 
   const embed = baseEmbed()
     .setTitle('🐎 Konfirmasi Donasi Kuda')
@@ -96,7 +236,7 @@ function buildConfirmation(draft, notice) {
     .setCustomId(customId('group', draft.id))
     .setPlaceholder('1. Pilih ras kuda')
     .addOptions(
-      catalog.getGroups().map((g) => ({
+      groups.map((g) => ({
         label: g.label,
         value: g.id,
         description: `${g.horses.length} varian`,
@@ -235,7 +375,7 @@ async function save(interaction, draft) {
   draft.saving = true;
   await interaction.update({ ...buildConfirmation(draft, '⏳ Menyimpan ke database...'), components: [] });
 
-  const horse = catalog.findHorse(draft.model);
+  const horse = findHorse(draft.model);
 
   // try HANYA membungkus insert: kalau error sesudahnya (misal editReply gagal),
   // jangan sampai staff diminta "Simpan lagi" padahal data sudah masuk -> kuda dobel
@@ -264,18 +404,18 @@ async function save(interaction, draft) {
   logger.info(`Donasi kuda ${result.horseid} untuk ${draft.citizenid} disimpan oleh ${interaction.user.tag}.`);
 
   const successEmbed = baseEmbed()
-      .setColor(0x2ecc71)
-      .setTitle('✅ Donasi Kuda Tersimpan')
-      .addFields(
-        { name: 'Horse ID', value: `\`${result.horseid}\``, inline: true },
-        { name: 'Pemilik', value: `${draft.charName} (\`${draft.citizenid}\`)`, inline: true },
-        { name: 'Nama Kuda', value: draft.name, inline: true },
-        { name: 'Model', value: `${horse.label}\n\`${horse.model}\``, inline: true },
-        { name: 'Gender', value: draft.gender, inline: true },
-        { name: 'Height', value: draft.height, inline: true },
-        { name: 'Tier Donasi', value: tierLabel(draft.tier), inline: true },
-        { name: 'Diinput oleh', value: `<@${interaction.user.id}>`, inline: true }
-      )
+    .setColor(0x2ecc71)
+    .setTitle('✅ Donasi Kuda Tersimpan')
+    .addFields(
+      { name: 'Horse ID', value: `\`${result.horseid}\``, inline: true },
+      { name: 'Pemilik', value: `${draft.charName} (\`${draft.citizenid}\`)`, inline: true },
+      { name: 'Nama Kuda', value: draft.name, inline: true },
+      { name: 'Model', value: `${horse.label}\n\`${horse.model}\``, inline: true },
+      { name: 'Gender', value: draft.gender, inline: true },
+      { name: 'Height', value: draft.height, inline: true },
+      { name: 'Tier Donasi', value: tierLabel(draft.tier), inline: true },
+      { name: 'Diinput oleh', value: `<@${interaction.user.id}>`, inline: true }
+    )
     .setFooter({ text: `player_horses.id: ${result.id}` });
 
   await interaction.editReply({ embeds: [successEmbed], components: [] }).catch(() => {});
@@ -298,13 +438,13 @@ async function handle(interaction, action, draftId) {
 
   switch (action) {
     case 'group':
-      if (catalog.findGroup(value)) {
+      if (findGroup(value)) {
         draft.groupId = value;
         draft.model = null; // model lama belum tentu ada di ras yang baru
       }
       return interaction.update(buildConfirmation(draft));
     case 'model':
-      if (catalog.findHorse(value)?.groupId === draft.groupId) draft.model = value;
+      if (findHorse(value)?.groupId === draft.groupId) draft.model = value;
       return interaction.update(buildConfirmation(draft));
     case 'gender':
       if (GENDERS.some((g) => g.value === value)) draft.gender = value;
@@ -326,7 +466,7 @@ module.exports = {
   key: KEY,
   label: 'Kuda',
   emoji: '🐎',
-  validate: catalog.validateCatalog,
+  validate,
   openForm,
   handle,
 };

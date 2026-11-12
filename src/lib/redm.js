@@ -1,6 +1,6 @@
 const axios = require('axios');
-const config = require('../../config');
-const logger = require('../../core/logger');
+const config = require('../config');
+const logger = require('./logger');
 
 /**
  * Service buat komunikasi ke server RedM/FXServer.

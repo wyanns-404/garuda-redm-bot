@@ -1,6 +1,10 @@
 const { SlashCommandBuilder } = require('discord.js');
 
-module.exports = {
+/**
+ * FITUR: Command umum bot.
+ */
+/** @type {import('../../lib/modules').SlashCommand} */
+const ping = {
   data: new SlashCommandBuilder()
     .setDescription('Cek apakah bot masih hidup dan berapa latency-nya')
     .setName('ping'),
@@ -13,3 +17,7 @@ module.exports = {
     );
   },
 };
+
+/** @type {import('../../lib/modules').BotModule} */
+const modul = { commands: [ping] };
+module.exports = modul;

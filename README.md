@@ -8,49 +8,36 @@ modular supaya gampang nambah fitur baru tanpa bongkar kode yang sudah ada.
 ```
 redm-discord-bot/
 ├── src/
-│   ├── index.js                 # Entry point — jalankan file ini untuk start bot
-│   ├── deployCommands.js        # Script untuk mendaftarkan slash command ke Discord
-│   ├── config/
-│   │   └── index.js             # SEMUA konfigurasi (baca dari .env) ada di sini
-│   ├── core/                    # "Mesin" bot — jarang perlu disentuh
-│   │   ├── Bot.js               # Class utama: init client, load command/event/fitur
-│   │   ├── commandHandler.js    # Auto-load semua file di src/commands/**
-│   │   ├── eventHandler.js      # Auto-load semua file di src/events/**
-│   │   └── logger.js            # Logger konsisten (info/warn/error/debug)
-│   ├── commands/                # Slash command, dikelompokkan per kategori
-│   │   ├── general/             # ping, help, dll
-│   │   ├── redm/                # status, players, dll
-│   │   └── admin/                # reload, dll (command khusus admin)
-│   ├── events/                  # Event listener Discord.js
-│   │   └── client/               # ready, interactionCreate, dll
-│   ├── features/                # Fitur "besar" yang berdiri sendiri (self-contained)
-│   │   └── serverStatusEmbed/   # Contoh: auto-update embed status server
-│   ├── services/                # Komunikasi ke sistem luar (RedM API, database, dll)
-│   │   └── redm/
-│   │       └── RedMApi.js       # Semua request ke server RedM lewat sini
-│   └── utils/
-│       └── embeds.js            # Builder embed yang dipakai berulang
-├── data/                        # Tempat nyimpen data lokal (JSON/db file), di-gitignore
-├── .env.example                 # Contoh isi .env — copy jadi .env lalu isi
+│   ├── index.js              # Entry point: load semua modul, teruskan interaksi ke modulnya, login
+│   ├── config.js             # SEMUA konfigurasi (baca dari .env) ada di sini
+│   ├── deploy.js             # Script untuk mendaftarkan slash command ke Discord
+│   ├── lib/                  # Alat bantu yang dipakai bersama oleh semua modul
+│   │   ├── logger.js         # Logger konsisten (info/warn/error/debug)
+│   │   ├── embeds.js         # Builder embed yang dipakai berulang
+│   │   ├── db.js             # Koneksi MySQL (database server RedM)
+│   │   ├── redm.js           # Request ke API server RedM
+│   │   ├── ai.js             # Panggil AI (Claude / Gemini)
+│   │   └── modules.js        # Loader otomatis untuk src/modules/
+│   └── modules/              # SETIAP FITUR = 1 FOLDER
+│       ├── _contoh/          # Contoh modul untuk dicontek (tidak dimuat bot)
+│       ├── general/          # /ping
+│       ├── server-status/    # /status, /players, embed status auto-update
+│       ├── ai-faq/           # Bot FAQ berbasis AI
+│       └── donation/         # Panel donasi staff (index.js, shared.js, horse.js)
+├── data/                     # Data lokal (knowledge base, daftar kuda, log)
+├── .env.example              # Contoh isi .env — copy jadi .env lalu isi
 └── package.json
 ```
 
 ## Kenapa strukturnya begini?
 
-- **`config/`** → satu sumber kebenaran untuk semua env var. Command/fitur lain
+- **`config.js`** → satu sumber kebenaran untuk semua env var. Modul lain
   tinggal `require('../../config')`, tidak ada `process.env.X` yang tersebar.
-- **`core/`** → logic teknis bot (loader, logger). Ini bagian yang jarang berubah.
-- **`commands/`** → tinggal bikin file baru berisi `{ data, execute }`, otomatis
-  ke-load. Tidak perlu daftarin manual di file lain.
-- **`events/`** → sama seperti commands, tinggal bikin file baru berisi
-  `{ name, once?, execute }`.
-- **`features/`** → untuk fitur yang lebih kompleks dari 1 command saja (misal:
-  butuh interval, state, atau beberapa command sekaligus). Setiap fitur
-  berdiri sendiri di foldernya, gampang di-nonaktifkan/di-hapus tanpa
+- **`lib/`** → kode yang dipakai lebih dari 1 fitur (logger, database, API RedM, AI).
+  Kalau nanti ganti cara ambil data RedM (misal dari txAdmin API), cukup ubah `lib/redm.js` saja.
+- **`modules/`** → semua kode milik 1 fitur (command, tombol, event, interval) ada di
+  1 folder. Folder baru otomatis ke-load, jadi nambah/hapus fitur tidak
   mempengaruhi fitur lain.
-- **`services/`** → semua komunikasi ke "dunia luar" (RedM server, database,
-  API pihak ketiga) dipusatkan di sini. Kalau nanti ganti cara ambil data
-  RedM (misal dari txAdmin API), cukup ubah `RedMApi.js` saja.
 
 ## Cara Menjalankan
 
@@ -78,42 +65,46 @@ redm-discord-bot/
 
 ## Catatan Penting soal Endpoint RedM
 
-`RedMApi.js` mengambil data dari `info.json`, `players.json`, `dynamic.json`
+`lib/redm.js` mengambil data dari `info.json`, `players.json`, `dynamic.json`
 milik FXServer. Pastikan endpoint ini bisa diakses (tidak semua server
 mengaktifkannya secara default tergantung konfigurasi `sv_endpointprivacy`
 dan setup reverse proxy/firewall). Kalau server pakai txAdmin dan endpoint
 publik ini diblokir, alternatifnya adalah pakai txAdmin API — nanti tinggal
-ganti isi `RedMApi.js`, command lain tidak perlu diubah.
+ganti isi `lib/redm.js`, modul lain tidak perlu diubah.
 
-## Menambah Command Baru
+## Menambah Fitur Baru
 
-Buat file baru di `src/commands/<kategori>/nama-command.js`:
+**Cara paling gampang:** copy folder `src/modules/_contoh/`, ganti namanya tanpa
+awalan `_` (misal `src/modules/sapa/`), lalu ubah isinya. File contoh itu berisi
+slash command, tombol, dan event dengan penjelasan baris per baris.
+Folder yang diawali `_` tidak dimuat bot, jadi `_contoh` tidak mengubah perilaku bot.
+
+Modul di `src/modules/` otomatis ke-load, tidak perlu daftarin di file lain.
+Semua bagian di bawah opsional, export yang dibutuhkan saja:
 
 ```js
 const { SlashCommandBuilder } = require('discord.js');
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('nama-command')
-    .setDescription('Deskripsi command'),
-
+const halo = {
+  data: new SlashCommandBuilder().setName('halo').setDescription('Sapa bot'),
   async execute(interaction) {
     await interaction.reply('Halo!');
   },
 };
+
+/** @type {import('../../lib/modules').BotModule} */
+const modul = {
+  commands: [halo],                         // slash command milik fitur ini
+  components: { prefix: 'halo', handle },   // tombol/select/modal dengan customId "halo:..."
+  init(client) {},                          // pasang event, interval, dll
+};
+module.exports = modul;
 ```
 
-Lalu jalankan `npm run deploy-commands` lagi.
+Komentar `@type` di atas membuat VS Code memberi saran nama bagian
+(`commands`, `components`, `init`) dan penjelasannya saat kursor diarahkan.
 
-## Menambah Fitur Baru (yang lebih kompleks dari 1 command)
-
-1. Buat folder baru di `src/features/nama-fitur/`
-2. Buat `index.js` dengan minimal fungsi `init(client)`
-3. Daftarkan di `src/core/Bot.js` bagian `registerFeatures()`:
-   ```js
-   const namaFitur = require('../features/nama-fitur');
-   namaFitur.init(this.client);
-   ```
+Kalau fitur punya slash command, jalankan `npm run deploy-commands` lagi.
 
 ## Fitur: AI FAQ Bot (Garuda RedM)
 
@@ -141,13 +132,12 @@ lokal (bukan slash command — user tinggal ngetik pertanyaan biasa).
   kena cooldown, bot cukup react ⏳ di pesannya.
 
 **Ganti provider AI kapan pun:**
-Semua pemanggilan AI melewati `services/ai/index.js`, yang otomatis pilih
-`ClaudeService.js` atau `GeminiService.js` berdasarkan `AI_PROVIDER` di `.env`.
-Fitur `aiFaqBot` tidak tahu dan tidak peduli provider mana yang dipakai —
+Semua pemanggilan AI melewati `lib/ai.js`, yang otomatis pilih Claude atau
+Gemini berdasarkan `AI_PROVIDER` di `.env`.
+Modul `ai-faq` tidak tahu dan tidak peduli provider mana yang dipakai —
 tinggal ganti `AI_PROVIDER` + API key di `.env`, restart bot, selesai.
-Mau nambah provider lain (OpenAI, dll)? Bikin file baru dengan method
-`askWithContext(systemPrompt, userMessage)` yang bentuknya sama seperti
-`ClaudeService.js`/`GeminiService.js`, lalu tambahkan 1 baris `case` di `services/ai/index.js`.
+Mau nambah provider lain (OpenAI, dll)? Tambah 1 fungsi di `lib/ai.js`
+yang bentuknya sama seperti `askClaude`/`askGemini`, lalu tambahkan 1 baris `case` di `askWithContext()`.
 
 **Menambah/mengubah info yang bisa dijawab bot:**
 Cukup edit atau tambah file `.md` baru di `data/knowledge/`. Format bebas,
@@ -155,7 +145,7 @@ tapi disarankan pakai heading `##` per topik biar rapi. Tidak perlu sentuh kode 
 
 **Kalau nanti knowledge base sudah sangat besar** (ratusan topik), pendekatan
 "kirim semua ke system prompt" ini mulai boros token — saat itu baru perlu upgrade
-`knowledgeBase.js` ke retrieval berbasis embedding/vector search, tapi untuk FAQ
+`loadKnowledgeBase()` di `modules/ai-faq/index.js` ke retrieval berbasis embedding/vector search, tapi untuk FAQ
 server RP skala normal, pendekatan sekarang sudah cukup dan jauh lebih gampang dirawat.
 
 ## Ide Fitur Selanjutnya (contoh roadmap)

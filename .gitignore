@@ -10,3 +10,7 @@
 .DS_Store
 .vscode/
 .idea/
+
+/src/modules/_contoh
+
+CLAUDE.md
