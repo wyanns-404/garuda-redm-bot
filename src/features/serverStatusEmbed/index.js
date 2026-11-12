@@ -52,7 +52,7 @@ function init(client) {
     return;
   }
 
-  client.once('ready', () => {
+  client.once('clientReady', () => {
     updateStatusMessage(client); // update pertama kali begitu bot online
     setInterval(() => updateStatusMessage(client), intervalSeconds * 1000);
     logger.info(`Fitur status embed aktif, update tiap ${intervalSeconds} detik.`);

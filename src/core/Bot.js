@@ -20,6 +20,8 @@ class Bot {
     });
 
     this.client.commands = new Collection();
+    // prefix customId -> handler(interaction), diisi oleh fitur (lihat events/client/interactionCreate.js)
+    this.client.componentHandlers = new Map();
   }
 
   async start() {
@@ -47,6 +49,9 @@ class Bot {
 
     const aiFaqBot = require('../features/aiFaqBot');
     aiFaqBot.init(this.client);
+
+    const donation = require('../features/donation');
+    donation.init(this.client);
 
     logger.info('Semua fitur berhasil diregistrasi.');
   }

@@ -3,7 +3,7 @@ const logger = require('../../core/logger');
 const config = require('../../config');
 
 module.exports = {
-  name: 'ready',
+  name: 'clientReady',
   once: true,
   execute(client) {
     logger.info(`Bot login sebagai ${client.user.tag}`);

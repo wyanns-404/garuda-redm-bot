@@ -1,0 +1,259 @@
+{
+  "_info": "Daftar kuda yang bisa dipilih di panel donasi. Maks 25 grup, maks 25 kuda per grup (batas dropdown Discord). Restart bot setelah edit file ini.",
+  "groups": [
+    {
+      "id": "american_paint",
+      "label": "American Paint",
+      "horses": [
+        { "label": "American Paint Grey Overo", "model": "a_c_horse_americanpaint_greyovero" },
+        { "label": "American Paint Overo", "model": "a_c_horse_americanpaint_overo" },
+        { "label": "American Paint Tobiano", "model": "a_c_horse_americanpaint_tobiano" }
+      ]
+    },
+    {
+      "id": "american_standardbred",
+      "label": "American Standardbred",
+      "horses": [
+        { "label": "American Standardbred Black", "model": "a_c_horse_americanstandardbred_black" },
+        { "label": "American Standardbred Light Buckskin", "model": "a_c_horse_americanstandardbred_lightbuckskin" },
+        { "label": "American Standardbred Silvertail Buckskin", "model": "a_c_horse_americanstandardbred_silvertailbuckskin" }
+      ]
+    },
+    {
+      "id": "andalusian",
+      "label": "Andalusian",
+      "horses": [
+        { "label": "Andalusian Dark Bay", "model": "a_c_horse_andalusian_darkbay" },
+        { "label": "Andalusian Rose Gray", "model": "a_c_horse_andalusian_rosegray" }
+      ]
+    },
+    {
+      "id": "appaloosa",
+      "label": "Appaloosa",
+      "horses": [
+        { "label": "Appaloosa Black Snowflake", "model": "a_c_horse_appaloosa_blacksnowflake" },
+        { "label": "Appaloosa Blanket", "model": "a_c_horse_appaloosa_blanket" },
+        { "label": "Appaloosa Few Spotted", "model": "a_c_horse_appaloosa_fewspotted_pc" },
+        { "label": "Appaloosa Leopard", "model": "a_c_horse_appaloosa_leopard" },
+        { "label": "Appaloosa Leopard Blanket", "model": "a_c_horse_appaloosa_leopardblanket" }
+      ]
+    },
+    {
+      "id": "arabian",
+      "label": "Arabian",
+      "horses": [
+        { "label": "Arabian Grey", "model": "a_c_horse_arabian_grey" },
+        { "label": "Arabian Red Chestnut", "model": "a_c_horse_arabian_redchestnut" },
+        { "label": "Arabian Rose Grey Bay", "model": "a_c_horse_arabian_rosegreybay" },
+        { "label": "Arabian Warped Brindle", "model": "a_c_horse_arabian_warpedbrindle_pc" },
+        { "label": "Arabian White", "model": "a_c_horse_arabian_white" }
+      ]
+    },
+    {
+      "id": "ardennes",
+      "label": "Ardennes",
+      "horses": [
+        { "label": "Ardennes Iron Grey Roan", "model": "a_c_horse_ardennes_irongreyroan" },
+        { "label": "Ardennes Strawberry Roan", "model": "a_c_horse_ardennes_strawberryroan" }
+      ]
+    },
+    {
+      "id": "breton",
+      "label": "Breton",
+      "horses": [
+        { "label": "Breton Grullo Dun", "model": "a_c_horse_breton_grullodun" },
+        { "label": "Breton Mealy Dapple Bay", "model": "a_c_horse_breton_mealydapplebay" },
+        { "label": "Breton Red Roan", "model": "a_c_horse_breton_redroan" },
+        { "label": "Breton Seal Brown", "model": "a_c_horse_breton_sealbrown" },
+        { "label": "Breton Sorrel", "model": "a_c_horse_breton_sorrel" },
+        { "label": "Breton Steel Grey", "model": "a_c_horse_breton_steelgrey" }
+      ]
+    },
+    {
+      "id": "criollo",
+      "label": "Criollo",
+      "horses": [
+        { "label": "Criollo Bay Brindle", "model": "a_c_horse_criollo_baybrindle" },
+        { "label": "Criollo Bay Frame Overo", "model": "a_c_horse_criollo_bayframeovero" },
+        { "label": "Criollo Blue Roan Overo", "model": "a_c_horse_criollo_blueroanovero" },
+        { "label": "Criollo Marble Sabino", "model": "a_c_horse_criollo_marblesabino" },
+        { "label": "Criollo Sorrel Overo", "model": "a_c_horse_criollo_sorrelovero" }
+      ]
+    },
+    {
+      "id": "donkey_mule",
+      "label": "Donkey & Mule",
+      "horses": [
+        { "label": "Donkey Standard", "model": "a_c_donkey_01" },
+        { "label": "Mule", "model": "a_c_horsemule_01" }
+      ]
+    },
+    {
+      "id": "draft",
+      "label": "Draft (Belgian / Shire / Suffolk)",
+      "horses": [
+        { "label": "Belgian Blond Chestnut", "model": "a_c_horse_belgian_blondchestnut" },
+        { "label": "Shire Light Grey", "model": "a_c_horse_shire_lightgrey" },
+        { "label": "Shire Raven Black", "model": "a_c_horse_shire_ravenblack" },
+        { "label": "Suffolk Punch Sorrel", "model": "a_c_horse_suffolkpunch_sorrel" }
+      ]
+    },
+    {
+      "id": "dutch_warmblood",
+      "label": "Dutch Warmblood",
+      "horses": [
+        { "label": "Dutch Warmblood Chocolate Roan", "model": "a_c_horse_dutchwarmblood_chocolateroan" },
+        { "label": "Dutch Warmblood Sooty Buckskin", "model": "a_c_horse_dutchwarmblood_sootybuckskin" }
+      ]
+    },
+    {
+      "id": "gypsy_cob",
+      "label": "Gypsy Cob",
+      "horses": [
+        { "label": "Gypsy Cob Palomino Blagdon", "model": "a_c_horse_gypsycob_palominoblagdon" },
+        { "label": "Gypsy Cob Piebald", "model": "a_c_horse_gypsycob_piebald" },
+        { "label": "Gypsy Cob Skewbald", "model": "a_c_horse_gypsycob_skewbald" },
+        { "label": "Gypsy Cob Splashed Piebald", "model": "a_c_horse_gypsycob_splashedpiebald" },
+        { "label": "Gypsy Cob White Blagdon", "model": "a_c_horse_gypsycob_whiteblagdon" }
+      ]
+    },
+    {
+      "id": "hungarian_halfbred",
+      "label": "Hungarian Halfbred",
+      "horses": [
+        { "label": "Hungarian Halfbred Dark Dapple Grey", "model": "a_c_horse_hungarianhalfbred_darkdapplegrey" },
+        { "label": "Hungarian Halfbred Flaxen Chestnut", "model": "a_c_horse_hungarianhalfbred_flaxenchestnut" },
+        { "label": "Hungarian Halfbred Liver Chestnut", "model": "a_c_horse_hungarianhalfbred_liverchestnut" }
+      ]
+    },
+    {
+      "id": "kentucky_saddler",
+      "label": "Kentucky Saddler",
+      "horses": [
+        { "label": "Kentucky Saddler Black", "model": "a_c_horse_kentuckysaddle_black" },
+        { "label": "Kentucky Saddler Buttermilk Buckskin", "model": "a_c_horse_kentuckysaddle_buttermilkbuckskin_pc" },
+        { "label": "Kentucky Saddler Chestnut Pinto", "model": "a_c_horse_kentuckysaddle_chestnutpinto" },
+        { "label": "Kentucky Saddler Grey", "model": "a_c_horse_kentuckysaddle_grey" },
+        { "label": "Kentucky Saddler Silver Bay", "model": "a_c_horse_kentuckysaddle_silverbay" }
+      ]
+    },
+    {
+      "id": "kladruber",
+      "label": "Kladruber",
+      "horses": [
+        { "label": "Kladruber Black", "model": "a_c_horse_kladruber_black" },
+        { "label": "Kladruber Cremello", "model": "a_c_horse_kladruber_cremello" },
+        { "label": "Kladruber Grey", "model": "a_c_horse_kladruber_grey" },
+        { "label": "Kladruber Silver", "model": "a_c_horse_kladruber_silver" },
+        { "label": "Kladruber White", "model": "a_c_horse_kladruber_white" }
+      ]
+    },
+    {
+      "id": "missouri_fox_trotter",
+      "label": "Missouri Fox Trotter",
+      "horses": [
+        { "label": "Missouri Fox Trotter Amber Champagne", "model": "a_c_horse_missourifoxtrotter_amberchampagne" },
+        { "label": "Missouri Fox Trotter Black Tovero", "model": "a_c_horse_missourifoxtrotter_blacktovero" },
+        { "label": "Missouri Fox Trotter Blue Roan", "model": "a_c_horse_missourifoxtrotter_blueroan" },
+        { "label": "Missouri Fox Trotter Buckskin Brindle", "model": "a_c_horse_missourifoxtrotter_buckskinbrindle" },
+        { "label": "Missouri Fox Trotter Dapple Grey", "model": "a_c_horse_missourifoxtrotter_dapplegrey" },
+        { "label": "Missouri Fox Trotter Sable Champagne", "model": "a_c_horse_missourifoxtrotter_sablechampagne" },
+        { "label": "Missouri Fox Trotter Silver Dapple Pinto", "model": "a_c_horse_missourifoxtrotter_silverdapplepinto" }
+      ]
+    },
+    {
+      "id": "morgan",
+      "label": "Morgan",
+      "horses": [
+        { "label": "Morgan Bay", "model": "a_c_horse_morgan_bay" },
+        { "label": "Morgan Bay Roan", "model": "a_c_horse_morgan_bayroan" },
+        { "label": "Morgan Flaxen Chestnut", "model": "a_c_horse_morgan_flaxenchestnut" },
+        { "label": "Morgan Liver Chestnut", "model": "a_c_horse_morgan_liverchestnut_pc" },
+        { "label": "Morgan Palomino", "model": "a_c_horse_morgan_palomino" }
+      ]
+    },
+    {
+      "id": "mustang",
+      "label": "Mustang",
+      "horses": [
+        { "label": "Mustang Black Overo", "model": "a_c_horse_mustang_blackovero" },
+        { "label": "Mustang Buckskin", "model": "a_c_horse_mustang_buckskin" },
+        { "label": "Mustang Chestnut Tovero", "model": "a_c_horse_mustang_chestnuttovero" },
+        { "label": "Mustang Golden Dun", "model": "a_c_horse_mustang_goldendun" },
+        { "label": "Mustang Grullo Dun", "model": "a_c_horse_mustang_grullodun" },
+        { "label": "Mustang Red Dun Overo", "model": "a_c_horse_mustang_reddunovero" },
+        { "label": "Mustang Tiger Striped Bay", "model": "a_c_horse_mustang_tigerstripedbay" },
+        { "label": "Mustang Wild Bay", "model": "a_c_horse_mustang_wildbay" }
+      ]
+    },
+    {
+      "id": "nokota",
+      "label": "Nokota",
+      "horses": [
+        { "label": "Nokota Blue Roan", "model": "a_c_horse_nokota_blueroan" },
+        { "label": "Nokota White Roan", "model": "a_c_horse_nokota_whiteroan" }
+      ]
+    },
+    {
+      "id": "norfolk_roadster",
+      "label": "Norfolk Roadster",
+      "horses": [
+        { "label": "Norfolk Roadster Black", "model": "a_c_horse_norfolkroadster_black" },
+        { "label": "Norfolk Roadster Piebald Roan", "model": "a_c_horse_norfolkroadster_piebaldroan" },
+        { "label": "Norfolk Roadster Rose Grey", "model": "a_c_horse_norfolkroadster_rosegrey" },
+        { "label": "Norfolk Roadster Speckled Grey", "model": "a_c_horse_norfolkroadster_speckledgrey" },
+        { "label": "Norfolk Roadster Spotted Tricolor", "model": "a_c_horse_norfolkroadster_spottedtricolor" }
+      ]
+    },
+    {
+      "id": "tennessee_walker",
+      "label": "Tennessee Walker",
+      "horses": [
+        { "label": "Tennessee Walker Black Rabicano", "model": "a_c_horse_tennesseewalker_blackrabicano" },
+        { "label": "Tennessee Walker Chestnut", "model": "a_c_horse_tennesseewalker_chestnut" },
+        { "label": "Tennessee Walker Dapple Bay", "model": "a_c_horse_tennesseewalker_dapplebay" },
+        { "label": "Tennessee Walker Flaxen Roan", "model": "a_c_horse_tennesseewalker_flaxenroan" },
+        { "label": "Tennessee Walker Gold Palomino", "model": "a_c_horse_tennesseewalker_goldpalomino_pc" },
+        { "label": "Tennessee Walker Mahogany Bay", "model": "a_c_horse_tennesseewalker_mahoganybay" },
+        { "label": "Tennessee Walker Red Roan", "model": "a_c_horse_tennesseewalker_redroan" }
+      ]
+    },
+    {
+      "id": "thoroughbred",
+      "label": "Thoroughbred",
+      "horses": [
+        { "label": "Thoroughbred Black Chestnut", "model": "a_c_horse_thoroughbred_blackchestnut" },
+        { "label": "Thoroughbred Blood Bay", "model": "a_c_horse_thoroughbred_bloodbay" },
+        { "label": "Thoroughbred Dapple Grey", "model": "a_c_horse_thoroughbred_dapplegrey" },
+        { "label": "Thoroughbred Reverse Dapple Black", "model": "a_c_horse_thoroughbred_reversedappleblack" }
+      ]
+    },
+    {
+      "id": "turkoman",
+      "label": "Turkoman",
+      "horses": [
+        { "label": "Turkoman Black", "model": "a_c_horse_turkoman_black" },
+        { "label": "Turkoman Chestnut", "model": "a_c_horse_turkoman_chestnut" },
+        { "label": "Turkoman Dark Bay", "model": "a_c_horse_turkoman_darkbay" },
+        { "label": "Turkoman Gold", "model": "a_c_horse_turkoman_gold" },
+        { "label": "Turkoman Perlino", "model": "a_c_horse_turkoman_perlino" },
+        { "label": "Turkoman Silver", "model": "a_c_horse_turkoman_silver" }
+      ]
+    },
+    {
+      "id": "special",
+      "label": "Kuda Spesial",
+      "horses": [
+        { "label": "Taima Gray Snowcap Spotted", "model": "a_c_horse_gang_charles" },
+        { "label": "Rachel Seal Brown", "model": "a_c_horse_john_endlesssummer" },
+        { "label": "The Count Albino", "model": "a_c_horse_gang_dutch" },
+        { "label": "Silver Dollar Silver", "model": "a_c_horse_gang_hosea" },
+        { "label": "Baylock Black", "model": "a_c_horse_gang_micah" },
+        { "label": "Nell IV Few Spot Buckskin", "model": "a_c_horse_gang_uncle_endlesssummer" },
+        { "label": "Eagle Flies Splashed Buckskin", "model": "a_c_horse_eagleflies" },
+        { "label": "Buell Cremello Gold", "model": "a_c_horse_buell_warvets" },
+        { "label": "Phantom White", "model": "a_c_horse_winter02_01" }
+      ]
+    }
+  ]
+}

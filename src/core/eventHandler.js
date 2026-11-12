@@ -5,7 +5,7 @@ const logger = require('./logger');
 /**
  * Baca semua file event secara rekursif dari folder src/events.
  * Setiap file event HARUS export: { name, once?, execute }
- * name = nama event discord.js (contoh: 'ready', 'interactionCreate')
+ * name = nama event discord.js (contoh: 'clientReady', 'interactionCreate')
  *
  * Nambah event baru = bikin file baru di src/events/<kategori>/nama.js
  */

@@ -26,6 +26,18 @@ module.exports = {
       channelId: process.env.AI_FAQ_CHANNEL_ID || null,
       cooldownSeconds: Number(process.env.AI_FAQ_COOLDOWN_SECONDS || 10),
     },
+    donation: {
+      channelId: process.env.DONATION_CHANNEL_ID || null,
+      logChannelId: process.env.DONATION_LOG_CHANNEL_ID || null,
+      staffRoleId: process.env.DONATION_STAFF_ROLE_ID || null,
+    },
+  },
+  database: {
+    host: process.env.DB_HOST || null,
+    port: Number(process.env.DB_PORT || 3306),
+    user: process.env.DB_USER || null,
+    password: process.env.DB_PASSWORD || '',
+    name: process.env.DB_NAME || null,
   },
   ai: {
     provider: process.env.AI_PROVIDER || 'anthropic', // 'anthropic' | 'gemini'
