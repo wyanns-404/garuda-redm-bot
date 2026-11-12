@@ -8,7 +8,8 @@ const logger = require('./logger');
  * atau pastikan +set svgui_disable false / `set sv_master1 ...` sesuai kebutuhan):
  *   http://HOST:PORT/info.json     -> info server (nama, resource, versi)
  *   http://HOST:PORT/players.json  -> daftar player online
- *   http://HOST:PORT/dynamic.json  -> hostname, clients, sv_maxclients
+ *
+ * Status online & jumlah pemain diambil dari API dopminer (REDM_STATUS_API_URL).
  *
  * Kalau nanti mau pindah ke txAdmin API atau RCON custom,
  * CUKUP UBAH FILE INI SAJA — semua command/feature lain manggil lewat class ini.
@@ -16,11 +17,6 @@ const logger = require('./logger');
 class RedMApi {
   constructor() {
     this.baseUrl = `http://${config.redm.host}:${config.redm.port}`;
-  }
-
-  async getDynamic() {
-    const { data } = await axios.get(`${this.baseUrl}/dynamic.json`, { timeout: 5000 });
-    return data; // { hostname, clients, sv_maxclients, gametype, mapname }
   }
 
   async getInfo() {
@@ -34,16 +30,22 @@ class RedMApi {
   }
 
   /**
-   * Ambil status lengkap sekaligus, dengan fallback kalau server offline.
+   * Ambil status dari API dopminer, dengan fallback kalau API tidak bisa dijangkau.
+   * Daftar nama pemain tetap dari players.json; kalau gagal, daftar nama dikosongkan saja.
+   *
+   * Contoh respons API: { ok: true, servers: [{ name, online, players: 9, maxPlayers: 128 }] }
    */
   async getStatus() {
     try {
-      const [dynamic, players] = await Promise.all([this.getDynamic(), this.getPlayers()]);
+      const { data } = await axios.get(config.redm.statusApiUrl, { timeout: 5000 });
+      const server = data.servers?.[0];
+      if (!data.ok || !server) throw new Error('server tidak ada di respons API status');
+
+      const players = server.online ? await this.getPlayers().catch(() => []) : [];
       return {
-        online: true,
-        hostname: dynamic.hostname,
-        clients: dynamic.clients,
-        maxClients: dynamic.sv_maxclients,
+        online: server.online,
+        clients: server.players,
+        maxClients: server.maxPlayers,
         players,
       };
     } catch (err) {

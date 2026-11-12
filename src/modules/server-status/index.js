@@ -76,6 +76,14 @@ async function updateStatusMessage(client) {
   const embed = serverStatusEmbed({ serverName: config.redm.name, ...result });
 
   try {
+    // Pertama kali setelah bot start: cari embed status lama dari bot ini di channel,
+    // supaya pesan itu yang diedit (tidak dobel tiap bot restart), sama seperti panel donasi.
+    if (!cachedMessageId) {
+      const recent = await channel.messages.fetch({ limit: 50 });
+      const old = recent.find((m) => m.author.id === client.user.id && m.embeds[0]?.title === embed.data.title);
+      if (old) cachedMessageId = old.id;
+    }
+
     if (cachedMessageId) {
       const existing = await channel.messages.fetch(cachedMessageId).catch(() => null);
       if (existing) {

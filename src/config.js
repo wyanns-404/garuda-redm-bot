@@ -1,11 +1,5 @@
 require('dotenv').config();
 
-/**
- * Semua konfigurasi bot ada di satu tempat ini.
- * Kalau nanti nambah fitur baru dan butuh env var baru,
- * tinggal tambahkan di sini + di .env.example
- * (jangan taruh process.env.X tersebar di file lain).
- */
 module.exports = {
   discord: {
     token: process.env.DISCORD_TOKEN,
@@ -16,6 +10,7 @@ module.exports = {
     host: process.env.REDM_SERVER_HOST || '127.0.0.1',
     port: process.env.REDM_SERVER_PORT || '30120',
     name: process.env.REDM_SERVER_NAME || 'RedM Server',
+    statusApiUrl: process.env.REDM_STATUS_API_URL,
   },
   features: {
     statusEmbed: {

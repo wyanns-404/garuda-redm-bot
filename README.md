@@ -65,8 +65,9 @@ redm-discord-bot/
 
 ## Catatan Penting soal Endpoint RedM
 
-`lib/redm.js` mengambil data dari `info.json`, `players.json`, `dynamic.json`
-milik FXServer. Pastikan endpoint ini bisa diakses (tidak semua server
+`lib/redm.js` mengambil status online & jumlah pemain dari API dopminer
+(`REDM_STATUS_API_URL`), dan daftar nama pemain dari `players.json` milik FXServer.
+Pastikan `players.json` bisa diakses (tidak semua server
 mengaktifkannya secara default tergantung konfigurasi `sv_endpointprivacy`
 dan setup reverse proxy/firewall). Kalau server pakai txAdmin dan endpoint
 publik ini diblokir, alternatifnya adalah pakai txAdmin API — nanti tinggal
