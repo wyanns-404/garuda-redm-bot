@@ -4,19 +4,19 @@ module.exports = {
   discord: {
     token: process.env.DISCORD_TOKEN,
     clientId: process.env.DISCORD_CLIENT_ID,
-    guildId: process.env.DISCORD_GUILD_ID || null, // null = deploy global (lebih lambat propagate)
+    guildId: process.env.DISCORD_GUILD_ID || null,
   },
-  redm: {
-    host: process.env.REDM_SERVER_HOST || '127.0.0.1',
-    port: process.env.REDM_SERVER_PORT || '30120',
-    name: process.env.REDM_SERVER_NAME || 'RedM Server',
-    statusApiUrl: process.env.REDM_STATUS_API_URL,
-  },
+  // redm: {
+  //   host: process.env.REDM_SERVER_HOST || '127.0.0.1',
+  //   port: process.env.REDM_SERVER_PORT || '30120',
+  //   name: process.env.REDM_SERVER_NAME || 'Garuda: Ashland Frontier',
+  //   statusApiUrl: process.env.REDM_STATUS_API_URL,
+  // },
   features: {
-    statusEmbed: {
-      channelId: process.env.STATUS_CHANNEL_ID || null,
-      intervalSeconds: Number(process.env.STATUS_UPDATE_INTERVAL || 60),
-    },
+    // statusEmbed: {
+    //   channelId: process.env.STATUS_CHANNEL_ID || null,
+    //   intervalSeconds: Number(process.env.STATUS_UPDATE_INTERVAL || 60),
+    // },
     aiFaqBot: {
       channelId: process.env.AI_FAQ_CHANNEL_ID || null,
       cooldownSeconds: Number(process.env.AI_FAQ_COOLDOWN_SECONDS || 10),
