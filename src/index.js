@@ -12,6 +12,9 @@ const { loadModules } = require('./lib/modules');
  */
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+  // Pesan bot tidak boleh mem-ping siapa pun (@everyone, @here, role, user), misalnya kalau
+  // AI FAQ dipancing menulis "@everyone". Pengecualian: ping ke orang yang dibalas (reply).
+  allowedMentions: { parse: [], repliedUser: true },
 });
 
 const commands = new Map(); // nama slash command -> { data, execute }
