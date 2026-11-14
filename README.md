@@ -23,7 +23,9 @@ redm-discord-bot/
 │       ├── general/          # /ping
 │       ├── server-status/    # /status, /players, embed status auto-update
 │       ├── ai-faq/           # Bot FAQ berbasis AI
-│       └── donation/         # Panel donasi staff (index.js, shared.js, horse.js)
+│       ├── donation/         # Panel donasi staff (index.js, shared.js, horse.js)
+│       └── image-upload/     # Panel upload gambar ke Cloudflare R2 (link permanen)
+├── cloudflare/               # Kode Cloudflare Worker (di-paste ke dashboard Cloudflare, bukan dijalankan bot)
 ├── data/                     # Data lokal (knowledge base, daftar kuda, log)
 ├── .env.example              # Contoh isi .env — copy jadi .env lalu isi
 └── package.json
@@ -148,6 +150,44 @@ tapi disarankan pakai heading `##` per topik biar rapi. Tidak perlu sentuh kode 
 "kirim semua ke system prompt" ini mulai boros token — saat itu baru perlu upgrade
 `loadKnowledgeBase()` di `modules/ai-faq/index.js` ke retrieval berbasis embedding/vector search, tapi untuk FAQ
 server RP skala normal, pendekatan sekarang sudah cukup dan jauh lebih gampang dirawat.
+
+## Fitur: Upload Gambar (Cloudflare R2)
+
+Link lampiran Discord kedaluwarsa kalau dipakai di luar Discord (misal pinboard in-game).
+Fitur ini menyimpan gambar ke Cloudflare R2 dan memberi **link permanen**.
+
+Alur: panel di `IMAGE_CHANNEL_ID` → tombol **Upload Gambar** → form upload →
+bot cek role, tipe (PNG/JPG/WEBP dicek dari isi file) & ukuran (maks 5 MB) →
+simpan lewat Worker ke R2 → link dikirim ke pengupload (ephemeral) → dicatat ke `IMAGE_LOG_CHANNEL_ID`.
+
+**Setup Cloudflare (sekali saja, semua gratis):**
+1. Dashboard Cloudflare → **R2** → *Create bucket*, misal `garuda-images`.
+2. **Workers & Pages** → *Create* → *Hello World* worker, beri nama misal `garuda-img` → *Deploy*.
+3. Buka worker tersebut → *Edit code* → hapus isinya, paste isi `cloudflare/image-worker.js` → *Deploy*.
+4. Worker → *Settings* → **Bindings** → *Add* → **R2 bucket**: variable name `BUCKET`, pilih bucket dari langkah 1.
+5. Worker → *Settings* → **Variables and Secrets** → *Add* → type **Secret**, name `UPLOAD_SECRET`,
+   isi dengan kata sandi acak yang panjang (minimal 32 karakter).
+6. Worker → *Settings* → **Domains & Routes** → *Add* → **Custom domain** → isi `domainmu.com`
+   (domain harus sudah ada di akun Cloudflare yang sama). DNS & SSL dibuat otomatis.
+   Setelah itu matikan route `workers.dev` di halaman yang sama, supaya hanya ada 1 link resmi.
+   Link gambar jadi `https://domainmu.com/images/WYANNS-a8f3k2Xq9LmB.png`.
+   > Kalau nanti `domainmu.com` mau dipakai untuk website: hapus custom domain ini dan ganti dengan
+   > **Route** `domainmu.com/images/*` ke Worker yang sama. Link gambar lama tetap jalan.
+7. Isi `.env` bot:
+   - `IMAGE_WORKER_URL` = `https://domainmu.com` (tanpa `/images`)
+   - `IMAGE_FILE_PREFIX` = awalan nama file, misal `WYANNS` (huruf, angka, `_`, maks 20)
+   - `IMAGE_UPLOAD_SECRET` = kata sandi yang sama dengan langkah 5
+   - `IMAGE_CHANNEL_ID`, `IMAGE_LOG_CHANNEL_ID`, `IMAGE_UPLOAD_ROLE_ID`
+8. Restart bot. Panel otomatis muncul di `IMAGE_CHANNEL_ID`.
+
+**Catatan:**
+- Bucket R2 **tidak perlu** dijadikan publik; gambar dibaca lewat Worker.
+- Gambar disimpan di cache Cloudflare (hanya berlaku di custom domain), jadi gambar yang sama
+  cukup dibaca dari R2 sekali. Kuota gratis: R2 10 GB, Worker 100.000 request/hari.
+- Menghapus gambar yang melanggar:
+  1. R2 → bucket → cari nama file dari link (lihat channel log) → *Delete*.
+  2. Domain → **Caching** → *Configuration* → **Purge Cache** → *Custom Purge* → masukkan link gambarnya.
+     Tanpa langkah ini, gambar masih bisa tampil dari cache.
 
 ## Ide Fitur Selanjutnya (contoh roadmap)
 

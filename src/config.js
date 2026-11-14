@@ -26,6 +26,14 @@ module.exports = {
       logChannelId: process.env.DONATION_LOG_CHANNEL_ID || null,
       staffRoleId: process.env.DONATION_STAFF_ROLE_ID || null,
     },
+    imageUpload: {
+      channelId: process.env.IMAGE_CHANNEL_ID || null,
+      logChannelId: process.env.IMAGE_LOG_CHANNEL_ID || null,
+      roleId: process.env.IMAGE_UPLOAD_ROLE_ID || null,
+      workerUrl: process.env.IMAGE_WORKER_URL || null,
+      uploadSecret: process.env.IMAGE_UPLOAD_SECRET || null,
+      filePrefix: process.env.IMAGE_FILE_PREFIX || 'IMG',
+    },
   },
   database: {
     host: process.env.DB_HOST || null,
