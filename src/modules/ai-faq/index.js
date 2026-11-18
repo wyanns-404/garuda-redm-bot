@@ -97,6 +97,8 @@ async function handleMessage(message) {
     await message.react('⏳').catch(() => {});
     return;
   }
+  // Dicatat SEBELUM memanggil AI: kalau baru dicatat sesudah jawaban (2-5 detik), spam beruntun lolos semua
+  lastUsedAt.set(message.author.id, Date.now());
 
   try {
     await message.channel.sendTyping();
@@ -104,8 +106,6 @@ async function handleMessage(message) {
     const knowledgeBase = loadKnowledgeBase();
     const systemPrompt = buildSystemPrompt(knowledgeBase);
     const answer = await ai.askWithContext(systemPrompt, message.content);
-
-    lastUsedAt.set(message.author.id, Date.now());
 
     if (!answer || answer.includes(UNKNOWN_MARKER)) {
       logUnanswered(message.author.tag, message.content);
@@ -115,7 +115,7 @@ async function handleMessage(message) {
       return;
     }
 
-    await message.reply(answer);
+    await message.reply(answer.slice(0, 2000)); // batas panjang pesan Discord
   } catch (err) {
     logger.error('Gagal memproses pertanyaan AI FAQ:', err);
     await message.reply('Waduh, ada gangguan pas mau jawab pertanyaan kamu. Coba lagi sebentar lagi ya.').catch(() => {});
