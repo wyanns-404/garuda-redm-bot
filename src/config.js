@@ -21,7 +21,6 @@ module.exports = {
       roleId: process.env.IMAGE_UPLOAD_ROLE_ID || null,
       workerUrl: process.env.IMAGE_WORKER_URL || null,
       uploadSecret: process.env.IMAGE_UPLOAD_SECRET || null,
-      filePrefix: process.env.IMAGE_FILE_PREFIX || 'IMG',
     },
   },
   garudaApi: {

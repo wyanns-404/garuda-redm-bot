@@ -128,23 +128,25 @@ Butuh Garuda API (lihat catatan di atas). Yang boleh memakai panel: role Discord
 | `IMAGE_CHANNEL_ID` | Channel panel |
 | `IMAGE_LOG_CHANNEL_ID` | Channel log upload |
 | `IMAGE_UPLOAD_ROLE_ID` | Role yang boleh upload |
-| `IMAGE_WORKER_URL` | Domain yang terhubung ke Worker, tanpa `/images` (misal `https://domainmu.com`) |
+| `IMAGE_WORKER_URL` | Domain Worker saja (misal `https://r2.domainmu.com`) |
 | `IMAGE_UPLOAD_SECRET` | Sama dengan secret `UPLOAD_SECRET` di Worker |
-| `IMAGE_FILE_PREFIX` | Awalan nama file (huruf, angka, `_`, maks 20) |
 
-Link yang dihasilkan: `https://domainmu.com/images/<PREFIX>-<12 karakter acak>.png`.
+Link yang dihasilkan: `https://r2.domainmu.com/grd-assistant/img-uploads/<12 karakter acak>.png`, tersimpan di R2
+dengan key `grd-assistant/img-uploads/...` (tampil sebagai folder di dashboard R2). ID & username Discord pengupload disimpan sebagai
+metadata file (`owner`, `username`), tidak tampil di link.
 Hanya PNG/JPG/WEBP (dicek dari isi file), maksimal 5 MB.
 
-Setup Cloudflare (sekali, semuanya di dashboard):
-1. **R2** → *Create bucket*.
-2. **Workers & Pages** → *Create* → *Hello World* worker → *Deploy*.
+Setup Cloudflare (sekali, semuanya di dashboard). Contoh nama: bucket & Worker `<nama>-r2`,
+domain `r2.domainmu.com`. Folder di R2 tidak perlu dibuat, otomatis muncul saat upload pertama.
+1. **R2** → *Create bucket* → nama misal `<nama>-r2`.
+2. **Workers & Pages** → *Create* → *Hello World* worker → nama misal `<nama>-r2` → *Deploy*.
 3. Worker → *Edit code* → hapus isinya, paste **Kode Worker** di bawah → *Deploy*.
 4. Worker → *Settings* → **Bindings** → *Add* → **R2 bucket**, variable name `BUCKET`, pilih bucket tadi.
 5. Worker → *Settings* → **Variables and Secrets** → *Add* → **Secret** `UPLOAD_SECRET`
    (kata sandi acak, minimal 32 karakter).
-6. Worker → *Settings* → **Domains & Routes** → *Add* → **Custom domain** → domainmu, lalu matikan route
-   `workers.dev`. (Kalau domain juga dipakai untuk website, pakai **Route** `domainmu.com/images/*`.)
-7. Isi env var di atas, restart bot.
+6. Worker → *Settings* → **Domains & Routes** → *Add* → **Custom domain** → `r2.domainmu.com`, lalu matikan
+   `workers.dev` dan *Preview URLs* di halaman yang sama.
+7. Isi env var di atas (`IMAGE_WORKER_URL=https://r2.domainmu.com`), restart bot.
 
 <details>
 <summary><b>Kode Worker</b> (klik untuk membuka, lalu salin semuanya)</summary>
@@ -153,8 +155,11 @@ GET menampilkan gambar dari R2 (dengan cache Cloudflare). PUT menyimpan gambar, 
 `UPLOAD_SECRET`. Pola nama file harus sama dengan yang dibuat bot di `src/modules/image-upload/index.js`.
 
 ```js
-// Nama file selalu dibuat oleh bot: <PREFIX>-<12 karakter acak>.<ext>, misal WYANNS-a8f3k2Xq9LmB.png
-const PATH_PATTERN = /^\/images\/([A-Za-z0-9_]{1,20}-[A-Za-z0-9_-]{12}\.(png|jpg|webp))$/;
+// Link: https://<domain>/grd-assistant/img-uploads/<12 karakter acak>.<ext>,
+// misal https://r2.domainmu.com/grd-assistant/img-uploads/a8f3k2Xq9LmB.png
+// Path tanpa "/" depan dipakai sebagai key R2, jadi di dashboard R2 tampil sebagai folder grd-assistant/img-uploads/.
+// Bucket dipakai bersama: proyek lain cukup ditambahkan foldernya di pola ini.
+const PATH_PATTERN = /^\/(grd-assistant\/img-uploads\/[A-Za-z0-9_-]{12}\.(png|jpg|webp))$/;
 const CONTENT_TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 
 export default {
@@ -193,7 +198,13 @@ export default {
       if (!env.UPLOAD_SECRET || request.headers.get('Authorization') !== `Bearer ${env.UPLOAD_SECRET}`) {
         return new Response('Unauthorized', { status: 401 });
       }
-      await env.BUCKET.put(key, request.body);
+      // Pemilik disimpan sebagai metadata (bukan di URL), untuk library gambar per user Discord
+      const owner = request.headers.get('X-Owner-Id') || '';
+      if (!/^\d{5,25}$/.test(owner)) {
+        return new Response('X-Owner-Id wajib berisi ID Discord', { status: 400 });
+      }
+      const username = (request.headers.get('X-Owner-Name') || '').slice(0, 32);
+      await env.BUCKET.put(key, request.body, { customMetadata: { owner, username } });
       return new Response('Created', { status: 201 });
     }
 

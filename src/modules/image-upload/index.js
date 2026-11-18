@@ -55,15 +55,23 @@ function buildForm() {
 
 /**
  * Simpan gambar ke R2 lewat Worker, lalu kembalikan link publiknya.
- * Bentuk link: https://domain.com/images/<IMAGE_FILE_PREFIX>-<12 karakter acak>.<ext>
+ * Bentuk link: <IMAGE_WORKER_URL>/grd-assistant/img-uploads/<12 karakter acak>.<ext>
+ * (misal https://r2.domainmu.com/grd-assistant/img-uploads/a8f3k2Xq9LmB.png)
+ * Pemilik (ID & username Discord) disimpan Worker sebagai metadata file di R2, untuk library per user di website.
  */
-async function uploadToCloudflare(buffer, type) {
-  const { workerUrl, uploadSecret, filePrefix } = config.features.imageUpload;
-  const fileName = `${filePrefix}-${crypto.randomBytes(9).toString('base64url')}.${type}`;
-  const url = `${workerUrl.replace(/\/+$/, '')}/images/${fileName}`;
+async function uploadToCloudflare(buffer, type, user) {
+  const { workerUrl, uploadSecret } = config.features.imageUpload;
+  // Path harus sama dengan PATH_PATTERN di Kode Worker (README); folder di R2 muncul otomatis dari path ini
+  const fileName = `${crypto.randomBytes(9).toString('base64url')}.${type}`;
+  const url = `${workerUrl.replace(/\/+$/, '')}/grd-assistant/img-uploads/${fileName}`;
 
   await axios.put(url, buffer, {
-    headers: { Authorization: `Bearer ${uploadSecret}`, 'Content-Type': 'application/octet-stream' },
+    headers: {
+      Authorization: `Bearer ${uploadSecret}`,
+      'Content-Type': 'application/octet-stream',
+      'X-Owner-Id': user.id, // ID tidak pernah berubah, beda dengan username
+      'X-Owner-Name': user.username,
+    },
     timeout: 30000,
   });
   return url;
@@ -104,7 +112,7 @@ async function handleSubmit(interaction) {
     return interaction.editReply({ embeds: [errorEmbed('File harus berupa gambar PNG, JPG, atau WEBP.')] });
   }
 
-  const link = await uploadToCloudflare(buffer, type);
+  const link = await uploadToCloudflare(buffer, type, interaction.user);
   const sizeKb = Math.round(buffer.length / 1024);
   logger.info(`Gambar diupload oleh ${interaction.user.tag}: ${link} (${sizeKb} KB)`);
 
@@ -197,7 +205,7 @@ async function ensurePanel(client) {
 }
 
 function init(client) {
-  const { channelId, roleId, workerUrl, uploadSecret, filePrefix } = config.features.imageUpload;
+  const { channelId, roleId, workerUrl, uploadSecret } = config.features.imageUpload;
 
   if (!channelId) {
     logger.info('Fitur upload gambar: IMAGE_CHANNEL_ID belum di-set, fitur ini nonaktif.');
@@ -209,11 +217,6 @@ function init(client) {
   }
   if (!workerUrl || !uploadSecret) {
     logger.warn('Fitur upload gambar: IMAGE_WORKER_URL / IMAGE_UPLOAD_SECRET belum di-set, fitur ini nonaktif.');
-    return;
-  }
-  // Harus sama dengan aturan nama file di Kode Worker (README, bagian Upload Gambar)
-  if (!/^[A-Za-z0-9_]{1,20}$/.test(filePrefix)) {
-    logger.warn('Fitur upload gambar: IMAGE_FILE_PREFIX hanya boleh huruf, angka, _ (maks 20), fitur ini nonaktif.');
     return;
   }
 
