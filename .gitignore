@@ -3,10 +3,11 @@
 !.env.example
 /node_modules
 
-/data/knowledge/*.md
-!/data/knowledge/example.md
+# AI FAQ: knowledge base asli server (pribadi) & log pertanyaan tak terjawab
+/src/modules/ai-faq/knowledge/*.md
+!/src/modules/ai-faq/knowledge/example.md
+/src/modules/ai-faq/*.log
 
-/data/*.log
 .DS_Store
 .vscode/
 .idea/
@@ -14,5 +15,5 @@
 /src/modules/_contoh
 
 /docs/
-
+/redm-resources/
 CLAUDE.md

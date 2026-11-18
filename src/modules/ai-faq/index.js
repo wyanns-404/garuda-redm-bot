@@ -9,7 +9,7 @@ const ai = require('../../lib/ai');
  *
  * Cara kerja singkat:
  * 1. Dengar semua pesan, tapi HANYA proses kalau dikirim di AI_FAQ_CHANNEL_ID.
- * 2. Ambil seluruh isi data/knowledge/*.md sebagai konteks.
+ * 2. Ambil seluruh isi knowledge/*.md (di folder fitur ini) sebagai konteks.
  * 3. Kirim ke AI dengan system prompt yang membatasi topik ketat.
  * 4. Balas di channel yang sama (reply ke pesan user).
  *
@@ -18,12 +18,12 @@ const ai = require('../../lib/ai');
  */
 
 const UNKNOWN_MARKER = 'TIDAK_TAHU';
-const DATA_DIR = path.join(__dirname, '..', '..', '..', 'data');
-const KNOWLEDGE_DIR = path.join(DATA_DIR, 'knowledge');
-const UNANSWERED_LOG_PATH = path.join(DATA_DIR, 'unanswered-questions.log');
+// Semua data fitur ini ada di folder fitur ini sendiri (src/modules/ai-faq/)
+const KNOWLEDGE_DIR = path.join(__dirname, 'knowledge');
+const UNANSWERED_LOG_PATH = path.join(__dirname, 'unanswered-questions.log');
 
 /**
- * Baca semua file .md di data/knowledge/ dan gabungkan jadi satu teks konteks.
+ * Baca semua file .md di knowledge/ dan gabungkan jadi satu teks konteks.
  *
  * Untuk nambah/edit info server: TINGGAL EDIT FILE .md DI FOLDER ITU,
  * tidak perlu ubah kode sama sekali. Di-load ulang tiap ada pertanyaan
@@ -38,7 +38,7 @@ function loadKnowledgeBase() {
   const files = fs.readdirSync(KNOWLEDGE_DIR).filter((f) => f.endsWith('.md'));
 
   if (files.length === 0) {
-    logger.warn('Folder data/knowledge/ kosong, belum ada file .md.');
+    logger.warn('Folder knowledge/ AI FAQ kosong, belum ada file .md.');
     return '';
   }
 
@@ -53,7 +53,7 @@ function loadKnowledgeBase() {
 /**
  * Catat pertanyaan yang dijawab "TIDAK_TAHU" oleh AI (di luar knowledge base).
  * Buka file ini dari waktu ke waktu untuk tahu topik apa yang perlu
- * ditambahkan ke data/knowledge/.
+ * ditambahkan ke knowledge/.
  */
 function logUnanswered(username, question) {
   const line = `[${new Date().toISOString()}] ${username}: ${question}\n`;
@@ -82,7 +82,7 @@ ATURAN KETAT:
 - Jawab singkat, jelas, ramah, dan gunakan Bahasa Indonesia santai khas komunitas roleplay.
 
 === INFORMASI SERVER GARUDA REDM ===
-${knowledgeBase || '(belum ada data, isi folder data/knowledge/)'}
+${knowledgeBase || '(belum ada data, isi folder knowledge/ di modul ai-faq)'}
 === AKHIR INFORMASI ===`;
 }
 

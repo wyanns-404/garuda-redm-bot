@@ -17,7 +17,7 @@ const { baseEmbed, errorEmbed } = require('../../lib/embeds');
  * FITUR: Upload gambar ke Cloudflare R2 supaya dapat link permanen (misal untuk pinboard in-game).
  *
  * Link lampiran Discord kedaluwarsa kalau dipakai di luar Discord, jadi bot mengambil gambarnya
- * lalu menyimpannya lewat Cloudflare Worker (cloudflare/image-worker.js) ke bucket R2.
+ * lalu menyimpannya lewat Cloudflare Worker (kodenya ada di README, bagian Upload Gambar) ke bucket R2.
  *
  * Alur: panel di IMAGE_CHANNEL_ID -> tombol "Upload Gambar" -> form dengan kolom upload
  *       -> bot cek role, tipe & ukuran -> simpan ke R2 -> balas link -> catat ke IMAGE_LOG_CHANNEL_ID
@@ -211,7 +211,7 @@ function init(client) {
     logger.warn('Fitur upload gambar: IMAGE_WORKER_URL / IMAGE_UPLOAD_SECRET belum di-set, fitur ini nonaktif.');
     return;
   }
-  // Harus sama dengan aturan nama file di cloudflare/image-worker.js
+  // Harus sama dengan aturan nama file di Kode Worker (README, bagian Upload Gambar)
   if (!/^[A-Za-z0-9_]{1,20}$/.test(filePrefix)) {
     logger.warn('Fitur upload gambar: IMAGE_FILE_PREFIX hanya boleh huruf, angka, _ (maks 20), fitur ini nonaktif.');
     return;
