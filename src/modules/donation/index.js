@@ -1,14 +1,15 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const config = require('../../config');
 const logger = require('../../lib/logger');
-const db = require('../../lib/db');
+const api = require('../../lib/garuda-api');
 const { baseEmbed, errorEmbed } = require('../../lib/embeds');
 
 /**
  * FITUR: Panel donasi untuk staff Garuda RedM.
  *
  * - Panel (embed + tombol per jenis donasi) dipasang di DONATION_CHANNEL_ID.
- * - Hanya member dengan DONATION_STAFF_ROLE_ID yang boleh memakai panel.
+ * - Data disimpan lewat Garuda API (resource di server RedM), bukan MySQL langsung.
+ * - Izin ditentukan API dari role Discord pelaku: minimal level "staff" untuk donasi.
  * - Setiap jenis donasi punya file sendiri (horse.js, nanti pet.js, wagon.js, ...),
  *   karena tiap jenis insert ke tabel database yang berbeda.
  *
@@ -31,6 +32,8 @@ const TYPES = [
 ];
 
 const PANEL_PREFIX = 'donation:panel:';
+const STAFF_LEVELS = ['staff', 'admin', 'owner'];
+const RELOAD_INTERVAL_MS = 60 * 1000;
 let enabled = false;
 
 function findType(key) {
@@ -38,30 +41,30 @@ function findType(key) {
   return type && !type.comingSoon ? type : null;
 }
 
-function hasStaffRole(interaction) {
-  const { staffRoleId } = config.features.donation;
-  const roles = interaction.member?.roles;
-  if (!roles) return false;
-  // member dari cache = GuildMember (roles.cache), kalau tidak = data mentah API (array id)
-  return Array.isArray(roles) ? roles.includes(staffRoleId) : roles.cache.has(staffRoleId);
-}
+const deny = (interaction, message) =>
+  interaction.reply({ embeds: [errorEmbed(message)], flags: MessageFlags.Ephemeral });
 
 async function handle(interaction) {
-  if (!enabled || !hasStaffRole(interaction)) {
-    return interaction.reply({
-      embeds: [errorEmbed('Kamu tidak punya akses untuk input donasi.')],
-      flags: MessageFlags.Ephemeral,
-    });
-  }
+  if (!enabled) return deny(interaction, 'Fitur donasi sedang nonaktif.');
 
   // donation:panel:<jenis>  atau  donation:<jenis>:<aksi>[:<draftId>]
   const [, scope, ...rest] = interaction.customId.split(':');
 
   if (scope === 'panel') {
     const type = findType(rest[0]);
-    if (!type) {
-      return interaction.reply({ embeds: [errorEmbed('Jenis donasi ini belum tersedia.')], flags: MessageFlags.Ephemeral });
+    if (!type) return deny(interaction, 'Jenis donasi ini belum tersedia.');
+
+    // Cek level ke API sebelum membuka form. Langkah sesudahnya (form, simpan) juga dicek ulang oleh API.
+    let level;
+    try {
+      ({ level } = await api.request('POST', '/me', { actor: api.actorFrom(interaction) }));
+    } catch (err) {
+      if (err.code === 'DISABLED') return deny(interaction, 'Garuda API sedang dimatikan di server RedM.');
+      logger.error(`Gagal cek akses donasi ke API (${err.code}):`, err.message);
+      return deny(interaction, 'Server API tidak bisa dihubungi. Coba lagi sebentar lagi.');
     }
+    if (!STAFF_LEVELS.includes(level)) return deny(interaction, 'Kamu tidak punya akses untuk input donasi.');
+
     return type.openForm(interaction);
   }
 
@@ -135,30 +138,44 @@ async function ensurePanel(client) {
   }
 }
 
+/**
+ * Muat data tiap jenis donasi dari API (misal katalog kuda).
+ * Kalau API belum bisa dihubungi, dicoba ulang tiap 1 menit sampai berhasil.
+ * Log hanya ditulis saat penyebab gagalnya berubah, supaya console bot tidak penuh tiap menit.
+ */
+async function loadType(type, lastError = null) {
+  try {
+    await type.load();
+  } catch (err) {
+    if (err.code !== lastError) {
+      logger.warn(`Gagal memuat data donasi "${type.key}" dari API (${err.code}): ${err.message}. Dicoba ulang tiap 1 menit.`);
+    }
+    setTimeout(() => loadType(type, err.code), RELOAD_INTERVAL_MS);
+  }
+}
+
 function init(client) {
-  const { channelId, staffRoleId } = config.features.donation;
+  const { channelId } = config.features.donation;
 
   if (!channelId) {
     logger.info('Fitur donasi: DONATION_CHANNEL_ID belum di-set, fitur ini nonaktif.');
     return;
   }
-  if (!staffRoleId) {
-    logger.warn('Fitur donasi: DONATION_STAFF_ROLE_ID belum di-set, fitur ini nonaktif (demi keamanan).');
+  if (!config.garudaApi.enabled) {
+    logger.info('Fitur donasi: Garuda API dimatikan (GARUDA_API_ENABLED bukan true), fitur ini nonaktif.');
     return;
   }
-  if (!db.isConfigured()) {
-    logger.warn('Fitur donasi: konfigurasi database (DB_*) belum lengkap, fitur ini nonaktif.');
+  if (!api.isConfigured()) {
+    logger.warn('Fitur donasi: GARUDA_API_URL / GARUDA_API_SECRET belum di-set, fitur ini nonaktif.');
     return;
-  }
-
-  // Validasi data tiap jenis donasi (misal horses.json) sejak awal, biar error ketahuan saat start
-  for (const type of TYPES) {
-    if (!type.comingSoon) type.validate?.();
   }
 
   enabled = true;
   client.once('clientReady', () => {
     ensurePanel(client);
+    for (const type of TYPES) {
+      if (!type.comingSoon && type.load) loadType(type);
+    }
     logger.info(`Fitur donasi aktif di channel ${channelId}.`);
   });
 }

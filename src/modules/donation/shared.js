@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const config = require('../../config');
 const logger = require('../../lib/logger');
-const db = require('../../lib/db');
 
 /**
  * Helper yang dipakai SEMUA jenis donasi (kuda, pet, wagon, ...).
@@ -43,28 +42,6 @@ setInterval(() => {
 }, 5 * 60 * 1000).unref();
 
 /**
- * Cari karakter di tabel `players` berdasarkan citizenid (validasi pemilik + nama karakter).
- * @returns {Promise<{ citizenid: string, name: string } | null>}
- */
-async function findCharacter(citizenid) {
-  const rows = await db.query('SELECT citizenid, charinfo FROM players WHERE citizenid = ? LIMIT 1', [citizenid]);
-  if (rows.length === 0) return null;
-
-  return { citizenid: rows[0].citizenid, name: parseCharacterName(rows[0].charinfo) };
-}
-
-// charinfo bisa berupa string JSON (kolom longtext) atau object (kolom JSON)
-function parseCharacterName(charinfo) {
-  try {
-    const info = typeof charinfo === 'string' ? JSON.parse(charinfo) : charinfo;
-    const name = [info?.firstname, info?.lastname].filter(Boolean).join(' ');
-    return name || 'Tanpa nama';
-  } catch {
-    return 'Tanpa nama';
-  }
-}
-
-/**
  * Kirim embed log donasi ke DONATION_LOG_CHANNEL_ID.
  * Gagal kirim log TIDAK membatalkan donasi (data sudah masuk DB), cukup dicatat di console.
  */
@@ -80,4 +57,4 @@ async function sendDonationLog(client, embed) {
   }
 }
 
-module.exports = { drafts, findCharacter, sendDonationLog };
+module.exports = { drafts, sendDonationLog };

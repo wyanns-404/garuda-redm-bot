@@ -6,17 +6,7 @@ module.exports = {
     clientId: process.env.DISCORD_CLIENT_ID,
     guildId: process.env.DISCORD_GUILD_ID || null,
   },
-  // redm: {
-  //   host: process.env.REDM_SERVER_HOST || '127.0.0.1',
-  //   port: process.env.REDM_SERVER_PORT || '30120',
-  //   name: process.env.REDM_SERVER_NAME || 'Garuda: Ashland Frontier',
-  //   statusApiUrl: process.env.REDM_STATUS_API_URL,
-  // },
   features: {
-    // statusEmbed: {
-    //   channelId: process.env.STATUS_CHANNEL_ID || null,
-    //   intervalSeconds: Number(process.env.STATUS_UPDATE_INTERVAL || 60),
-    // },
     aiFaqBot: {
       channelId: process.env.AI_FAQ_CHANNEL_ID || null,
       cooldownSeconds: Number(process.env.AI_FAQ_COOLDOWN_SECONDS || 10),
@@ -24,7 +14,6 @@ module.exports = {
     donation: {
       channelId: process.env.DONATION_CHANNEL_ID || null,
       logChannelId: process.env.DONATION_LOG_CHANNEL_ID || null,
-      staffRoleId: process.env.DONATION_STAFF_ROLE_ID || null,
     },
     imageUpload: {
       channelId: process.env.IMAGE_CHANNEL_ID || null,
@@ -35,12 +24,11 @@ module.exports = {
       filePrefix: process.env.IMAGE_FILE_PREFIX || 'IMG',
     },
   },
-  database: {
-    host: process.env.DB_HOST || null,
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || null,
-    password: process.env.DB_PASSWORD || '',
-    name: process.env.DB_NAME || null,
+  garudaApi: {
+    // Saklar ON/OFF: hanya ON kalau persis "true". Saat OFF bot tidak memanggil API sama sekali.
+    enabled: process.env.GARUDA_API_ENABLED === 'true',
+    url: process.env.GARUDA_API_URL || null,
+    secret: process.env.GARUDA_API_SECRET || null,
   },
   ai: {
     provider: process.env.AI_PROVIDER || 'anthropic', // 'anthropic' | 'gemini'

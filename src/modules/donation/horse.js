@@ -1,4 +1,4 @@
-const path = require('path');
+const crypto = require('crypto');
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -10,18 +10,18 @@ const {
   TextInputStyle,
 } = require('discord.js');
 const logger = require('../../lib/logger');
-const db = require('../../lib/db');
+const api = require('../../lib/garuda-api');
 const { baseEmbed, errorEmbed } = require('../../lib/embeds');
-const { drafts, findCharacter, sendDonationLog } = require('./shared');
+const { drafts, sendDonationLog } = require('./shared');
 
 /**
- * JENIS DONASI: Kuda -> insert ke tabel `player_horses`.
+ * JENIS DONASI: Kuda -> tabel `player_horses`, lewat Garuda API (bukan MySQL langsung).
  *
  * Alur:
  * 1. openForm      : modal (citizenid, nama kuda, height)
- * 2. handle 'form' : validasi + cek citizenid di `players`, lalu tampilkan embed konfirmasi
+ * 2. handle 'form' : validasi + cek citizenid lewat API, lalu tampilkan embed konfirmasi
  * 3. handle 'group' / 'model' / 'gender' / 'tier' : update pilihan di embed konfirmasi
- * 4. handle 'save' : insert ke DB + kirim log;  'cancel' : batalkan draft
+ * 4. handle 'save' : POST /horses/donation + kirim log;  'cancel' : batalkan draft
  *
  * customId komponen: donation:horse:<action>[:<draftId>]
  */
@@ -47,36 +47,17 @@ const HEIGHT_MAX = 1.17;
 const customId = (action, draftId) => ['donation', KEY, action, draftId].filter(Boolean).join(':');
 
 // ============================================================
-// Daftar kuda (data/donation/horses.json)
-// Edit file JSON-nya untuk nambah/hapus kuda, lalu restart bot.
+// Daftar kuda: diambil dari API (GET /catalog/horses).
+// File sumbernya ada di resource: redm-resources/garuda-api/data/horses.json
 // ============================================================
 
-const { groups } = require(path.join(__dirname, '..', '..', '..', 'data', 'donation', 'horses.json'));
+let groups = [];
 
-// Batas dari Discord (opsi per dropdown) & dari kolom `horse` VARCHAR(50)
-const MAX_OPTIONS = 25;
-const MAX_MODEL_LENGTH = 50;
-
-function validate() {
-  if (groups.length > MAX_OPTIONS) {
-    throw new Error(`horses.json: jumlah grup ${groups.length}, maksimal ${MAX_OPTIONS}`);
-  }
-
-  const seenModels = new Set();
-  for (const group of groups) {
-    if (group.horses.length > MAX_OPTIONS) {
-      throw new Error(`horses.json: grup "${group.id}" punya ${group.horses.length} kuda, maksimal ${MAX_OPTIONS}`);
-    }
-    for (const horse of group.horses) {
-      if (horse.model.length > MAX_MODEL_LENGTH) {
-        throw new Error(`horses.json: model "${horse.model}" lebih dari ${MAX_MODEL_LENGTH} karakter`);
-      }
-      if (seenModels.has(horse.model)) {
-        throw new Error(`horses.json: model "${horse.model}" duplikat`);
-      }
-      seenModels.add(horse.model);
-    }
-  }
+/** Muat katalog kuda dari API. Dipanggil saat bot start (dan diulang kalau gagal). */
+async function load() {
+  const catalog = await api.request('GET', '/catalog/horses');
+  groups = catalog.groups;
+  logger.info(`Katalog kuda dimuat dari API: ${groups.length} grup.`);
 }
 
 function findGroup(groupId) {
@@ -89,99 +70,6 @@ function findHorse(model) {
     if (horse) return { ...horse, groupId: group.id };
   }
   return null;
-}
-
-// ============================================================
-// Database: insert ke `player_horses`
-// ============================================================
-
-const HORSE_ID_PREFIX = 'EXC';
-const LOCK_NAME = 'garuda_bot_donation_horseid';
-const LOCK_TIMEOUT_SECONDS = 10;
-
-/**
- * Nilai kolom yang SELALU sama untuk setiap kuda donasi
- * (diambil dari template query manual sebelumnya).
- * Kalau ada nilai default yang mau diubah, cukup ubah di sini.
- */
-const HORSE_DEFAULTS = {
-  horsexp: 5100,
-  credit: 100.0,
-  components_after: null,
-  components_before: null,
-  textures: null,
-  custom_textures: null,
-  coreHP: 100,
-  coreST: 100,
-  health: 120,
-  stamina: 120.0,
-  active: 0,
-  distance: 0,
-  status: 0,
-  notified: 0,
-  tamed: 0,
-  custprice: 0.0,
-  custenabled: 1,
-  job: 'blahorsetrainer',
-  flame: 0,
-  rgb: 0,
-};
-
-/**
- * Insert kuda donasi dengan horseid berurutan (EXC + angka terakhir + 1).
- *
- * Kolom horseid TIDAK unique di database, jadi pengambilan nomor terakhir + INSERT
- * dikunci pakai GET_LOCK di koneksi yang sama. Hasilnya: kalau 2 staff menekan
- * Simpan bersamaan, yang kedua menunggu sampai yang pertama selesai -> nomor tidak bentrok.
- *
- * Kalau koneksi putus SEBELUM INSERT dikirim (misal koneksi idle sudah diputus server),
- * dicoba ulang 1x dengan koneksi baru. Kalau putusnya saat/sesudah INSERT dikirim,
- * TIDAK di-retry karena tidak bisa dipastikan datanya sudah masuk atau belum (bisa dobel).
- *
- * @returns {Promise<{ id: number, horseid: string }>}
- */
-async function insertDonationHorse(data) {
-  const state = { insertSent: false };
-  try {
-    return await attemptInsert(data, state);
-  } catch (err) {
-    if (!err.fatal || state.insertSent) throw err;
-    logger.warn(`Koneksi DB putus sebelum insert (${err.code}), mencoba ulang dengan koneksi baru...`);
-    return attemptInsert(data, state);
-  }
-}
-
-async function attemptInsert(data, state) {
-  return db.withConnection(async (conn) => {
-    const [[{ locked }]] = await conn.query('SELECT GET_LOCK(?, ?) AS locked', [LOCK_NAME, LOCK_TIMEOUT_SECONDS]);
-    if (locked !== 1) {
-      throw new Error('Gagal mendapatkan lock horseid (ada proses simpan lain yang belum selesai).');
-    }
-
-    try {
-      // LIKE dulu supaya index `horseid` kepakai, REGEXP untuk buang horseid EXC yang bukan angka
-      const [[{ lastNumber }]] = await conn.query(
-        `SELECT MAX(CAST(SUBSTRING(horseid, ?) AS UNSIGNED)) AS lastNumber
-         FROM player_horses
-         WHERE horseid LIKE ? AND horseid REGEXP ?`,
-        [HORSE_ID_PREFIX.length + 1, `${HORSE_ID_PREFIX}%`, `^${HORSE_ID_PREFIX}[0-9]+$`]
-      );
-      const horseid = `${HORSE_ID_PREFIX}${Number(lastNumber || 0) + 1}`;
-
-      const row = { ...HORSE_DEFAULTS, ...data, horseid };
-      const columns = Object.keys(row);
-      state.insertSent = true;
-      const [result] = await conn.execute(
-        `INSERT INTO player_horses (${columns.map((c) => `\`${c}\``).join(', ')})
-         VALUES (${columns.map(() => '?').join(', ')})`,
-        columns.map((c) => row[c])
-      );
-
-      return { id: result.insertId, horseid };
-    } finally {
-      await conn.query('SELECT RELEASE_LOCK(?)', [LOCK_NAME]).catch(() => {});
-    }
-  });
 }
 
 // ============================================================
@@ -202,6 +90,16 @@ function parseHeight(raw) {
   if (number === 0) return HEIGHT_DEFAULT;
   if (number < HEIGHT_MIN || number > HEIGHT_MAX) return null;
   return String(number);
+}
+
+/** Pesan untuk staff dari error Garuda API. */
+function apiErrorMessage(err) {
+  if (err.status === 0) return 'Server API tidak bisa dihubungi.';
+  if (err.code === 'DISABLED') return 'Garuda API sedang dimatikan di server RedM.';
+  if (err.status === 403) return 'Kamu tidak punya akses untuk aksi ini.';
+  if (err.status === 409) return 'Permintaan yang sama masih diproses, tunggu sebentar.';
+  if (err.status === 400) return `Data ditolak API: ${err.message}`;
+  return `Terjadi kesalahan di API (${err.code}).`;
 }
 
 function tierLabel(value) {
@@ -295,6 +193,13 @@ function buildConfirmation(draft, notice) {
 }
 
 async function openForm(interaction) {
+  if (groups.length === 0) {
+    return interaction.reply({
+      embeds: [errorEmbed('Daftar kuda belum termuat dari API. Coba lagi sebentar lagi.')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
   const modal = new ModalBuilder()
     .setCustomId(customId('form'))
     .setTitle('Donasi Kuda')
@@ -337,6 +242,9 @@ async function handleFormSubmit(interaction) {
   if (!citizenid || !name) {
     return interaction.reply({ embeds: [errorEmbed('Citizen ID dan nama kuda wajib diisi.')], flags: MessageFlags.Ephemeral });
   }
+  if (!/^[A-Za-z0-9]+$/.test(citizenid)) {
+    return interaction.reply({ embeds: [errorEmbed('Citizen ID hanya boleh huruf dan angka.')], flags: MessageFlags.Ephemeral });
+  }
   if (height === null) {
     return interaction.reply({
       embeds: [errorEmbed(`Height tidak valid. Isi \`0\` atau angka \`${HEIGHT_MIN}\` - \`${HEIGHT_MAX}\` (maks 2 desimal).`)],
@@ -346,16 +254,22 @@ async function handleFormSubmit(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const character = await findCharacter(citizenid);
-  if (!character) {
-    return interaction.editReply({ embeds: [errorEmbed(`Citizen ID \`${citizenid}\` tidak ditemukan di tabel players.`)] });
+  let player;
+  try {
+    player = await api.request('GET', `/players/${citizenid}`, { actor: api.actorFrom(interaction) });
+  } catch (err) {
+    const message =
+      err.code === 'PLAYER_NOT_FOUND' ? `Citizen ID \`${citizenid}\` tidak ditemukan di tabel players.` : apiErrorMessage(err);
+    return interaction.editReply({ embeds: [errorEmbed(message)] });
   }
 
   const draft = drafts.create({
     type: KEY,
     staffId: interaction.user.id,
-    citizenid: character.citizenid,
-    charName: character.name,
+    // 1 Request-Id per draft: kalau Simpan ditekan ulang setelah gagal koneksi, API tidak membuat kuda dobel
+    requestId: crypto.randomUUID(),
+    citizenid: player.citizenid,
+    charName: player.name,
     name,
     height,
     groupId: null,
@@ -377,26 +291,30 @@ async function save(interaction, draft) {
 
   const horse = findHorse(draft.model);
 
-  // try HANYA membungkus insert: kalau error sesudahnya (misal editReply gagal),
-  // jangan sampai staff diminta "Simpan lagi" padahal data sudah masuk -> kuda dobel
+  // try HANYA membungkus panggilan API: kalau error sesudahnya (misal editReply gagal), tidak perlu Simpan lagi
   let result;
   try {
-    result = await insertDonationHorse({
-      citizenid: draft.citizenid,
-      name: draft.name,
-      horse: draft.model,
-      height: draft.height,
-      gender: draft.gender,
-      donasi: draft.tier,
+    const data = await api.request('POST', '/horses/donation', {
+      actor: api.actorFrom(interaction),
+      requestId: draft.requestId,
+      body: {
+        citizenid: draft.citizenid,
+        name: draft.name,
+        horse: draft.model,
+        height: draft.height,
+        gender: draft.gender,
+        donasi: draft.tier,
+      },
     });
+    result = data.after;
   } catch (err) {
     draft.saving = false;
-    logger.error('Gagal insert donasi kuda:', err);
+    logger.error(`Gagal simpan donasi kuda (${err.code}):`, err.message);
 
     const reason =
-      err.code === 'ER_NO_REFERENCED_ROW_2'
+      err.code === 'PLAYER_NOT_FOUND'
         ? `Citizen ID \`${draft.citizenid}\` sudah tidak ada di tabel players.`
-        : 'Terjadi kesalahan database. Data BELUM tersimpan, silakan coba Simpan lagi.';
+        : `${apiErrorMessage(err)}\nTekan **Simpan** lagi untuk mencoba ulang (aman, tidak akan membuat kuda dobel).`;
     return interaction.editReply(buildConfirmation(draft, `❌ ${reason}`));
   }
 
@@ -466,7 +384,7 @@ module.exports = {
   key: KEY,
   label: 'Kuda',
   emoji: '🐎',
-  validate,
+  load,
   openForm,
   handle,
 };
