@@ -21,7 +21,7 @@ Setiap fitur otomatis **nonaktif** kalau env var wajibnya belum diisi, jadi kamu
 
 ## Kebutuhan
 
-- Node.js 18 atau lebih baru
+- Node.js 20.18 atau lebih baru (log berwarna memakai `util.styleText` bawaan Node)
 - Bot Discord dari [Discord Developer Portal](https://discord.com/developers/applications), dengan
   **Message Content Intent** aktif (dipakai fitur AI FAQ)
 - Opsional, sesuai fitur:
@@ -57,6 +57,9 @@ Startup command yang disarankan:
 cd /home/container && if [ -f package.json ]; then npm install --no-fund --no-audit --omit=dev; fi && exec node src/index.js
 ```
 Upload `.env` ke folder bot di server (file ini tidak ikut di git).
+
+Log berwarna otomatis mati kalau console hosting tidak terdeteksi sebagai terminal. Kalau console panel
+mendukung warna tapi log tampil polos, tambahkan `FORCE_COLOR=1` di `.env`.
 
 ## Konfigurasi Fitur
 
