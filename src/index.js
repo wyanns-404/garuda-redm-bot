@@ -29,7 +29,6 @@ logger.info(`Total ${commands.size} command dimuat.`);
 
 client.once('clientReady', () => {
   logger.info(`Bot login sebagai ${client.user.tag}`);
-  // client.user.setActivity(config.redm.name, { type: ActivityType.Watching });
   client.user.setActivity('Garuda: Ashland Frontier', { type: ActivityType.Watching });
 });
 
