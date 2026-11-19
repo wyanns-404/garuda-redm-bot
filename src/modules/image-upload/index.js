@@ -13,24 +13,10 @@ const config = require('../../config');
 const logger = require('../../lib/logger');
 const { baseEmbed, errorEmbed } = require('../../lib/embeds');
 
-/**
- * FITUR: Upload gambar ke Cloudflare R2 supaya dapat link permanen (misal untuk pinboard in-game).
- *
- * Link lampiran Discord kedaluwarsa kalau dipakai di luar Discord, jadi bot mengambil gambarnya
- * lalu menyimpannya lewat Cloudflare Worker (kodenya ada di README, bagian Upload Gambar) ke bucket R2.
- *
- * Alur: panel di IMAGE_CHANNEL_ID -> tombol "Upload Gambar" -> form dengan kolom upload
- *       -> bot cek role, tipe & ukuran -> simpan ke R2 -> balas link -> catat ke IMAGE_LOG_CHANNEL_ID
- */
-
 const PREFIX = 'image';
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 let enabled = false;
 
-/**
- * Tentukan jenis gambar dari isi file (bukan dari nama/ekstensi, karena itu bisa dipalsukan).
- * @returns {'png' | 'jpg' | 'webp' | null}
- */
 function detectImageType(buffer) {
   if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
@@ -42,7 +28,6 @@ function hasUploadRole(interaction) {
   const { roleId } = config.features.imageUpload;
   const roles = interaction.member?.roles;
   if (!roles) return false;
-  // member dari cache = GuildMember (roles.cache), kalau tidak = data mentah API (array id)
   return Array.isArray(roles) ? roles.includes(roleId) : roles.cache.has(roleId);
 }
 
@@ -53,15 +38,8 @@ function buildForm() {
   return new ModalBuilder().setCustomId(`${PREFIX}:submit`).setTitle('Upload Gambar').addLabelComponents(label);
 }
 
-/**
- * Simpan gambar ke R2 lewat Worker, lalu kembalikan link publiknya.
- * Bentuk link: <IMAGE_WORKER_URL>/grd-assistant/img-uploads/<12 karakter acak>.<ext>
- * (misal https://r2.domainmu.com/grd-assistant/img-uploads/a8f3k2Xq9LmB.png)
- * Pemilik (ID & username Discord) disimpan Worker sebagai metadata file di R2, untuk library per user di website.
- */
 async function uploadToCloudflare(buffer, type, user) {
   const { workerUrl, uploadSecret } = config.features.imageUpload;
-  // Path harus sama dengan PATH_PATTERN di Kode Worker (README); folder di R2 muncul otomatis dari path ini
   const fileName = `${crypto.randomBytes(9).toString('base64url')}.${type}`;
   const url = `${workerUrl.replace(/\/+$/, '')}/grd-assistant/img-uploads/${fileName}`;
 
@@ -69,7 +47,7 @@ async function uploadToCloudflare(buffer, type, user) {
     headers: {
       Authorization: `Bearer ${uploadSecret}`,
       'Content-Type': 'application/octet-stream',
-      'X-Owner-Id': user.id, // ID tidak pernah berubah, beda dengan username
+      'X-Owner-Id': user.id,
       'X-Owner-Name': user.username,
     },
     timeout: 30000,
@@ -103,7 +81,6 @@ async function handleSubmit(interaction) {
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  // Ambil gambar dari Discord selagi link-nya masih berlaku
   const { data } = await axios.get(file.url, { responseType: 'arraybuffer', maxContentLength: MAX_BYTES, timeout: 30000 });
   const buffer = Buffer.from(data);
 
@@ -119,8 +96,8 @@ async function handleSubmit(interaction) {
   await interaction.editReply({
     embeds: [
       baseEmbed()
-        .setTitle('✅ Gambar berhasil diupload')
-        .setDescription(`Link permanen (salin untuk pinboard):\n\`\`\`\n${link}\n\`\`\``)
+        .setTitle('Gambar berhasil diupload')
+        .setDescription(`Link permanen (salin untuk di share):\n\`\`\`\n${link}\n\`\`\``)
         .setImage(link),
     ],
   });
@@ -128,7 +105,7 @@ async function handleSubmit(interaction) {
   await sendUploadLog(
     interaction.client,
     baseEmbed()
-      .setTitle('🖼️ Upload Gambar')
+      .setTitle('Log Upload Gambar')
       .addFields(
         { name: 'Diupload oleh', value: `${interaction.user} (${interaction.user.tag})` },
         { name: 'Link', value: link },
@@ -146,7 +123,6 @@ async function handle(interaction) {
     });
   }
 
-  // image:open (tombol panel) atau image:submit (form dikirim)
   const action = interaction.customId.split(':')[1];
   if (action === 'open' && interaction.isButton()) return interaction.showModal(buildForm());
   if (action === 'submit' && interaction.isModalSubmit()) return handleSubmit(interaction);
@@ -154,29 +130,25 @@ async function handle(interaction) {
 
 function buildPanel() {
   const embed = baseEmbed()
-    .setTitle('🖼️ Upload Gambar Garuda RedM')
+    .setTitle('Upload Gambar')
     .setDescription(
       [
-        'Upload gambar untuk mendapatkan **link permanen**, misalnya untuk pinboard in-game.',
+        'Upload gambarmu, Share link-nya dengan mudah, dan simpan selamanya untuk kebutuhan di **Garuda: Ashland Frontier**.',
         '',
-        'Tekan **Upload Gambar**, pilih file (PNG/JPG/WEBP, maks 5 MB), lalu kirim.',
-        'Link hanya terlihat oleh kamu, dan setiap upload tercatat di channel log.',
+        '> 1. Tekan `📤` pilih file (PNG/JPG/WEBP, maks 5 MB), lalu kirim.',
+        '> 2. Copy link lalu Share / pakai sesuai kebutuhan.',
       ].join('\n')
-    );
+    )
+    .setImage('https://r2.wyanns.dev/grd-assistant/img-uploads/Zm48LEKw3XEf.png');
 
   const button = new ButtonBuilder()
     .setCustomId(`${PREFIX}:open`)
-    .setLabel('Upload Gambar')
-    .setEmoji('📤')
-    .setStyle(ButtonStyle.Primary);
+    .setLabel('📤')
+    .setStyle(ButtonStyle.Secondary);
 
   return { embeds: [embed], components: [new ActionRowBuilder().addComponents(button)] };
 }
 
-/**
- * Pasang panel di IMAGE_CHANNEL_ID. Kalau panel lama dari bot ini sudah ada,
- * pesan itu yang diedit supaya tidak dobel tiap bot restart (sama seperti panel donasi).
- */
 async function ensurePanel(client) {
   const { channelId } = config.features.imageUpload;
 
@@ -227,6 +199,5 @@ function init(client) {
   });
 }
 
-/** @type {import('../../lib/modules').BotModule} */
 const modul = { components: { prefix: PREFIX, handle }, init };
 module.exports = modul;
